@@ -7,9 +7,13 @@
 */
 
 const db = require("../../configuration/db");
-const fs = require("fs");
-const path = require("path");
+const redis = require("redis");
+const { promisify } = require("util");
 dotenv = require("dotenv");
+
+// Initialize Redis client
+const redisClient = redis.createClient();
+redisClient.connect(); // For Redis v4+
 
 // Add a product to the database
 const addProduct = async (id, name, desc, price, category, image) => {
@@ -119,9 +123,54 @@ const getProductById = async (id) => {
     }
 };
 
+const CACHE_KEY = "product_categories";
+const CACHE_EXPIRATION = 60 * 30; // 30 minutes
+
+// Fetch all product categories
+const getProductCategories = async () => {
+    try {
+        // Check Redis cache first
+        const cachedCategories = await redisClient.get(CACHE_KEY);
+
+        if (cachedCategories) {
+            console.log("Serving from Redis cache");
+            return { success: true, categories: JSON.parse(cachedCategories) };
+        }
+
+        // Fetch from database if cache is empty
+        const query = "SELECT DISTINCT category FROM product";
+
+        const categories = await new Promise((resolve, reject) => {
+            db.query(query, (err, result) => {
+                if (err) reject(err);
+                else resolve(result.map(row => row.category)); // Extract categories
+            });
+        });
+
+        // Store in Redis cache
+        await redisClient.setEx(CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
+
+        return { success: true, categories };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
+
+// Function to clear Redis cache when categories update
+const clearProductCategoriesCache = async () => {
+    try {
+        await redisClient.del(CACHE_KEY);
+        console.log("Product categories cache cleared.");
+    } catch (err) {
+        console.error("Error clearing Redis cache:", err.message);
+    }
+};
+
 module.exports = {
     addProduct,
     updateProduct,
     getProductsByCategory,
-    getProductById
+    getProductById,
+    getProductCategories,
+    clearProductCategoriesCache
 };

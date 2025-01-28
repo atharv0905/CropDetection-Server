@@ -59,9 +59,20 @@ const getProductByIDHandler = async (req, res) => {
     }
 };
 
+// Function to fetch all product categories
+const fetchProductCategoriesHandler = async (req, res) => {
+    try {
+        const categories = await productsService.getProductCategories();
+        res.json(categories);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     addProductHandler,
     updateProductHandler,
     getProductsByCategoryHandler,
-    getProductByIDHandler
+    getProductByIDHandler,
+    fetchProductCategoriesHandler
 };

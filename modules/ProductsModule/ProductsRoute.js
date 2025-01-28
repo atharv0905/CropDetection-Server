@@ -46,5 +46,8 @@ router.get("/category/:category", productsController.getProductsByCategoryHandle
 
 // Route for getting product details by ID
 router.get("/id/:id", productsController.getProductByIDHandler); // tested
+
+// Route for getting all product categories
+router.get("/categories", productsController.fetchProductCategoriesHandler); // tested
  
 module.exports = router;
