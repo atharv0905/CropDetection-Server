@@ -9,7 +9,14 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
+const fs = require('fs');
 const genericController = require("./GenericController");
+
+// Create directory if not exists
+const dir = './template_images';
+if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+}
 
 // Multer configuration for templates
 const templateStorage = multer.diskStorage({

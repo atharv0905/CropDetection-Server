@@ -71,7 +71,8 @@ appEvents.on("dbReady", () => {
     const genericRoute = require("./modules/GenericModule/GenericRoute");
     app.use("/generic", genericRoute);
 
-    app.use("/templates", express.static(path.join(__dirname, "template_images")));
+    app.use("/templates", express.static(path.join(__dirname, "template_images"))); // Serve template images
+    app.use("/prodImg", express.static(path.join(__dirname, "product_images"))); // Serve product images
 
     // Start the server
     server.listen(process.env.PORT, process.env.IP, () => {

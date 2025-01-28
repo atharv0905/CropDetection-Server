@@ -8,6 +8,7 @@
 
 const productsService = require("./ProductsService");
 
+// Function to add a new product
 const addProductHandler = async (req, res) => {
     const { name, desc, price, category } = req.body;
     const id = req.id;
@@ -21,6 +22,7 @@ const addProductHandler = async (req, res) => {
     }
 };
 
+// Function to update details of a product
 const updateProductHandler = async (req, res) => {
     const { id, name, desc, price, category } = req.body;
     const image = id + ".png";
@@ -33,7 +35,33 @@ const updateProductHandler = async (req, res) => {
     }
 };
 
+// Function to get products by category
+const getProductsByCategoryHandler = async (req, res) => {
+    const { category } = req.params;
+
+    try {
+        const products = await productsService.getProductsByCategory(category);
+        res.json(products);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
+// Function to get product details by ID
+const getProductByIDHandler = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const product = await productsService.getProductById(id);
+        res.json(product);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     addProductHandler,
-    updateProductHandler
+    updateProductHandler,
+    getProductsByCategoryHandler,
+    getProductByIDHandler
 };

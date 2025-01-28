@@ -10,7 +10,14 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const uuid = require("uuid");
+const fs = require('fs');
 const productsController = require("./ProductsController");
+
+// Create directory if not exists
+const dir = './template_images';
+if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+}
 
 // Multer configuration
 const storage = multer.diskStorage({
@@ -25,11 +32,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// Route for adding new product
 router.post("/add", (req, res, next) => {
     req.id = uuid.v4();
     next();
 }, upload.single("image"), productsController.addProductHandler); // tested
 
+// Route for updating details of a product
 router.put("/update", upload.single("image"), productsController.updateProductHandler); // tested
+
+// Route for getting products by category
+router.get("/category/:category", productsController.getProductsByCategoryHandler); // tested
+
+// Route for getting product details by ID
+router.get("/id/:id", productsController.getProductByIDHandler); // tested
  
 module.exports = router;
