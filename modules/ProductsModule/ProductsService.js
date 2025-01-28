@@ -9,11 +9,11 @@
 const db = require("../../configuration/db");
 
 // Add a product to the database
-const addProduct = async (id, name, desc, price, image) => {
+const addProduct = async (id, name, desc, price, category, image) => {
     try{
-        const query = "INSERT INTO product (id, name, description, price, image) VALUES (?, ?, ?, ?, ?)";
+        const query = "INSERT INTO product (id, name, description, category, price, image) VALUES (?, ?, ?, ?, ?, ?)";
         await new Promise((resolve, reject) => {
-            db.query(query, [id, name, desc, price, image], (err, result) => {
+            db.query(query, [id, name, desc, category, price, image], (err, result) => {
                 if(err){
                     reject(err);
                 }else{
@@ -29,11 +29,11 @@ const addProduct = async (id, name, desc, price, image) => {
 }
 
 // Update product details in the database
-const updateProduct = async (id, name, desc, price, image) => {
+const updateProduct = async (id, name, desc, price, category, image) => {
     try{
-        const query = "UPDATE product SET name = ?, description = ?, price = ?, image = ? WHERE id = ?";
+        const query = "UPDATE product SET name = ?, category = ?, description = ?, price = ?, image = ? WHERE id = ?";
         await new Promise((resolve, reject) => {
-            db.query(query, [name, desc, price, image, id], (err, result) => {
+            db.query(query, [name, category, desc, price, image, id], (err, result) => {
                 if(err){
                     reject(err);
                 }else{

@@ -10,6 +10,7 @@ const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const path = require("path");
 const http = require("http");
 const socketIO = require("socket.io");
 const EventEmitter = require("events");
@@ -66,6 +67,11 @@ appEvents.on("dbReady", () => {
     // Routes
     const productsRoute = require("./modules/ProductsModule/ProductsRoute");
     app.use("/product", productsRoute);
+
+    const genericRoute = require("./modules/GenericModule/GenericRoute");
+    app.use("/generic", genericRoute);
+
+    app.use("/templates", express.static(path.join(__dirname, "template_images")));
 
     // Start the server
     server.listen(process.env.PORT, process.env.IP, () => {

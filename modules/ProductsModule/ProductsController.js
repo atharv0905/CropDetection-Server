@@ -9,12 +9,12 @@
 const productsService = require("./ProductsService");
 
 const addProductHandler = async (req, res) => {
-    const { name, desc, price } = req.body;
+    const { name, desc, price, category } = req.body;
     const id = req.id;
     const image = id + ".png";
 
     try {
-        const result = await productsService.addProduct(id, name, desc, price, image);
+        const result = await productsService.addProduct(id, name, desc, price, category, image);
         res.json(result);
     } catch (err) {
         res.json({ success: false, message: err.message });
@@ -22,11 +22,11 @@ const addProductHandler = async (req, res) => {
 };
 
 const updateProductHandler = async (req, res) => {
-    const { id, name, desc, price } = req.body;
+    const { id, name, desc, price, category } = req.body;
     const image = id + ".png";
 
     try {
-        const result = await productsService.updateProduct(id, name, desc, price, image);
+        const result = await productsService.updateProduct(id, name, desc, price, category, image);
         res.json(result);
     } catch (err) {
         res.json({ success: false, message: err.message });
