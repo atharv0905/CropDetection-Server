@@ -1,9 +1,9 @@
-/**
- * File: server.js
- * Author: Atharv Mirgal
- * Description: This is the main express server
- * Created on: 27-1-2025
- * Last Modified: 27-1-2025
+/*
+    File: server.js
+    Author: Atharv Mirgal
+    Description: This is the main express server
+    Created on: 27-1-2025
+    Last Modified: 28-1-2025
  */
 
 const express = require("express");
@@ -64,6 +64,8 @@ appEvents.on("dbReady", () => {
     console.log("Initializing routes and socket handlers...");
 
     // Routes
+    const productsRoute = require("./modules/ProductsModule/ProductsRoute");
+    app.use("/product", productsRoute);
 
     // Start the server
     server.listen(process.env.PORT, process.env.IP, () => {

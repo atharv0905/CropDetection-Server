@@ -1,9 +1,9 @@
-/**
- * File: db.js
- * Author: Atharv Mirgal
- * Description: This file is used for mysql database connection
- * Created on: 27-1-2025
- * Last Modified: 27-1-2025
+/*
+    File: db.js
+    Author: Atharv Mirgal
+    Description: This file is used for mysql database connection
+    Created on: 27-1-2025
+    Last Modified: 27-1-2025
  */
 
 const mysql = require("mysql2");
