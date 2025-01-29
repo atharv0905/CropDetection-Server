@@ -41,6 +41,7 @@ CREATE TABLE product (
     description VARCHAR(50) NOT NULL,
     category VARCHAR(20) NOT NULL CHECK(category IN ('Fertilizer', 'Pesticide', 'Seeds')),
     price NUMERIC(6, 2) NOT NULL,
-    image VARCHAR(50) NOT NULL
+    image VARCHAR(50) NOT NULL,
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

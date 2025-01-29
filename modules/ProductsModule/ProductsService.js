@@ -123,7 +123,7 @@ const getProductById = async (id) => {
     }
 };
 
-const CACHE_KEY = "product_categories";
+const CACHE_KEY = "product_categories"; // Redis cache key for product categories
 const CACHE_EXPIRATION = 60 * 30; // 30 minutes
 
 // Fetch all product categories
@@ -156,11 +156,41 @@ const getProductCategories = async () => {
     }
 };
 
-// Function to clear Redis cache when categories update
-const clearProductCategoriesCache = async () => {
+// Get top 7 recently added products
+const getRecentlyAddedProducts = async () => {
+    try {
+        const query = "SELECT id, name, description, price, image FROM product ORDER BY createdAt DESC, id DESC LIMIT 7"; // SQL query to fetch recently added products
+
+        // Execute the query
+        const products = await new Promise((resolve, reject) => {
+            db.query(query, (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+
+        // Add the image URL to each product object
+        const productsWithImageURL = products.map((product) => ({
+            ...product,
+            image_url: `${process.env.BASE_URL}/prodImg/${product.image}`
+        }));
+
+        // Return the products with image URL
+        return { success: true, products: productsWithImageURL };
+    } catch (err) {
+        // Return an error message if an error occurs
+        return { success: false, message: err.message };
+    }
+};
+
+// Function to clear Redis cache 
+const clearCache = async (CACHE_KEY) => {
     try {
         await redisClient.del(CACHE_KEY);
-        console.log("Product categories cache cleared.");
+        console.log(`Cleared Redis cache for key: ${CACHE_KEY}`);
     } catch (err) {
         console.error("Error clearing Redis cache:", err.message);
     }
@@ -172,5 +202,6 @@ module.exports = {
     getProductsByCategory,
     getProductById,
     getProductCategories,
-    clearProductCategoriesCache
+    clearCache,
+    getRecentlyAddedProducts
 };

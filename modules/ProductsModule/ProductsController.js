@@ -69,10 +69,21 @@ const fetchProductCategoriesHandler = async (req, res) => {
     }
 };
 
+// Function to get recently added products
+const getRecentProductsHandler = async (req, res) => {
+    try {
+        const products = await productsService.getRecentlyAddedProducts();
+        res.json(products);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     addProductHandler,
     updateProductHandler,
     getProductsByCategoryHandler,
     getProductByIDHandler,
-    fetchProductCategoriesHandler
+    fetchProductCategoriesHandler,
+    getRecentProductsHandler
 };
