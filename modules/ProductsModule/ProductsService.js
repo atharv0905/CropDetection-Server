@@ -12,6 +12,7 @@ const { promisify } = require("util");
 const stringSimilarity = require('string-similarity');
 const levenshtein = require('fast-levenshtein');
 const { console } = require("inspector");
+const e = require("cors");
 dotenv = require("dotenv");
 
 // Initialize Redis client
@@ -177,7 +178,7 @@ const getRecentlyAddedProducts = async () => {
             return { success: true, products: JSON.parse(cachedProducts) };
         }
 
-        const query = "SELECT id, name, description, price, image FROM product ORDER BY createdAt DESC, id DESC LIMIT 7"; // SQL query to fetch recently added products
+        const query = "SELECT id, name, description, price, image FROM product WHERE createdAt >= NOW() - INTERVAL 2 DAY"; // SQL query to fetch recently added products
 
         // Execute the query
         const products = await new Promise((resolve, reject) => {
@@ -190,8 +191,11 @@ const getRecentlyAddedProducts = async () => {
             });
         });
 
+        // randomly select any 7 products
+        const randomProducts = products.sort(() => Math.random() - 0.5).slice(0, 7);
+
         // Add the image URL to each product object
-        const productsWithImageURL = products.map((product) => ({
+        const productsWithImageURL = randomProducts.map((product) => ({
             ...product,
             image: `${process.env.BASE_URL}/prodImg/${product.image}`
         }));
@@ -217,20 +221,42 @@ const clearCache = async (CACHE_KEY) => {
     }
 };
 
-const fetchProducts = () => {
-    return new Promise((resolve, reject) => {
-        db.query('SELECT id, name, description FROM product', (err, results) => {
-            if (err) reject(err);
-            resolve(results);
+// Function to fetch all products from the database
+const fetchProducts = async () => {
+    const CACHE_EXPIRATION = 60 * 5; // 5 minutes
+    try {
+        const { ALL_PRODUCTS_CACHE_KEY } = require("../../constants/cache_keys");
+        const cachedProducts = await redisClient.get(ALL_PRODUCTS_CACHE_KEY);
+
+        if (cachedProducts) {
+            console.log("Serving from Redis cache");
+            return { success: true, products: JSON.parse(cachedProducts) };
+        }
+
+        const query = "SELECT id, name, description, price FROM product";
+        const products = await new Promise((resolve, reject) => {
+            db.query(query, (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results);
+                }
+            });
         });
-    });
+
+        await redisClient.setEx(ALL_PRODUCTS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(products));
+        return { success: true, products: products };
+    } catch (err) {
+        console.error("Error fetching products:", err.message);
+        return { success: false, message: err.message };
+    }
 };
 
 // Main function to search for products based on a search term
 const searchProducts = async (searchTerm) => {
     try {
         // Fetch all products from the database
-        const products = await fetchProducts();
+        const { products } = await fetchProducts();
 
         // Ensure products is an array and contains data
         if (!Array.isArray(products) || products.length === 0) {
@@ -254,12 +280,6 @@ const searchProducts = async (searchTerm) => {
             let bestMatches = stringSimilarity.findBestMatch(searchTerm, combinedStrings);
             bestMatches = bestMatches.ratings.filter(r => r.rating > 0.06).sort((a, b) => b.rating - a.rating);
 
-            // const bestMatchProducts = bestMatches.map(match => {
-            //     const index = combinedStrings.indexOf(match.target);
-            //     return products[index];
-            // });
-
-            // send id, name, description and price and image as url
             const bestMatchProducts = bestMatches.map(match => {
                 const index = combinedStrings.indexOf(match.target);
                 return {
