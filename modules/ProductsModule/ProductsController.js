@@ -79,11 +79,24 @@ const getRecentProductsHandler = async (req, res) => {
     }
 };
 
+// Function to search products 
+const searchProductsHandler = async (req, res) => {
+    const { name } = req.params;
+
+    try {
+        const products = await productsService.searchProducts(name);
+        res.json(products);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     addProductHandler,
     updateProductHandler,
     getProductsByCategoryHandler,
     getProductByIDHandler,
     fetchProductCategoriesHandler,
-    getRecentProductsHandler
+    getRecentProductsHandler,
+    searchProductsHandler
 };

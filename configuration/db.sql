@@ -37,13 +37,15 @@ CREATE TABLE user_verification (
 
 CREATE TABLE product (
     id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(20) NOT NULL,
-    description VARCHAR(50) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    description VARCHAR(500) NOT NULL,
     category VARCHAR(20) NOT NULL CHECK(category IN ('Fertilizer', 'Pesticide', 'Seeds')),
     price NUMERIC(6, 2) NOT NULL,
     image VARCHAR(50) NOT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE product ADD FULLTEXT(name, description);
 
 CREATE TABLE user_search_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -77,3 +79,8 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+
+
+
+

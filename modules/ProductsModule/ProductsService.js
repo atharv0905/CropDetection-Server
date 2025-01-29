@@ -9,6 +9,9 @@
 const db = require("../../configuration/db");
 const redis = require("redis");
 const { promisify } = require("util");
+const stringSimilarity = require('string-similarity');
+const levenshtein = require('fast-levenshtein');
+const { console } = require("inspector");
 dotenv = require("dotenv");
 
 // Initialize Redis client
@@ -61,7 +64,7 @@ const updateProduct = async (id, name, desc, price, category, image) => {
 
         const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
-    
+
         // Return a success message if the product is updated successfully
         return { success: true, message: "Product updated successfully" };
     } catch (err) {
@@ -214,6 +217,70 @@ const clearCache = async (CACHE_KEY) => {
     }
 };
 
+const fetchProducts = () => {
+    return new Promise((resolve, reject) => {
+        db.query('SELECT id, name, description FROM product', (err, results) => {
+            if (err) reject(err);
+            resolve(results);
+        });
+    });
+};
+
+// Main function to search for products based on a search term
+const searchProducts = async (searchTerm) => {
+    try {
+        // Fetch all products from the database
+        const products = await fetchProducts();
+
+        // Ensure products is an array and contains data
+        if (!Array.isArray(products) || products.length === 0) {
+            throw new Error('No products found');
+        }
+
+        // Get product names and descriptions arrays
+        const productNames = products.map(p => p.name);
+        const productDescriptions = products.map(p => p.description);
+
+        // Ensure searchTerm is a string
+        if (typeof searchTerm !== 'string' || searchTerm.trim() === '') {
+            throw new Error('Search term should be a non-empty string');
+        }
+
+        // Combine both names and descriptions for better match
+        const combinedStrings = productNames.concat(productDescriptions);
+
+        // Use string-similarity to find the best match
+        if (combinedStrings.length > 1) {
+            let bestMatches = stringSimilarity.findBestMatch(searchTerm, combinedStrings);
+            bestMatches = bestMatches.ratings.filter(r => r.rating > 0.06).sort((a, b) => b.rating - a.rating);
+
+            // const bestMatchProducts = bestMatches.map(match => {
+            //     const index = combinedStrings.indexOf(match.target);
+            //     return products[index];
+            // });
+
+            // send id, name, description and price and image as url
+            const bestMatchProducts = bestMatches.map(match => {
+                const index = combinedStrings.indexOf(match.target);
+                return {
+                    id: products[index].id,
+                    name: products[index].name,
+                    description: products[index].description,
+                    price: products[index].price,
+                    image: `${process.env.BASE_URL}/prodImg/${products[index].id}.png`
+                };
+            });
+
+            return { success: true, products: bestMatchProducts };
+        } else {
+            return { success: true, products: products[0] };
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        return { success: false, message: error.message };
+    }
+};
+
 module.exports = {
     addProduct,
     updateProduct,
@@ -221,5 +288,6 @@ module.exports = {
     getProductById,
     getProductCategories,
     clearCache,
-    getRecentlyAddedProducts
+    getRecentlyAddedProducts,
+    searchProducts
 };
