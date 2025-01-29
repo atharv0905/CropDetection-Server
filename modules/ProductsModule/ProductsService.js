@@ -31,6 +31,10 @@ const addProduct = async (id, name, desc, price, category, image) => {
             });
         });
 
+        const { PRODUCT_CATEGORY_CACHE_KEY, NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
+        clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
+        clearCache(NEW_ARRIVALS_CACHE_KEY); // Clear Redis cache for new arrivals
+
         // Return a success message if the product is added successfully
         return { success: true, message: "Product added successfully" };
     } catch (err) {
@@ -55,6 +59,9 @@ const updateProduct = async (id, name, desc, price, category, image) => {
             });
         });
 
+        const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
+        clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
+    
         // Return a success message if the product is updated successfully
         return { success: true, message: "Product updated successfully" };
     } catch (err) {
@@ -82,7 +89,7 @@ const getProductsByCategory = async (category) => {
         // Add the image URL to each product object
         const productsWithImageURL = products.map((product) => ({
             ...product,
-            image_url: `${process.env.BASE_URL}/prodImg/${product.image}`
+            image: `${process.env.BASE_URL}/prodImg/${product.image}`
         }));
 
         // Return the products with image URL
@@ -112,7 +119,7 @@ const getProductById = async (id) => {
         // Add the image URL to the product object
         const productWithImageURL = {
             ...product,
-            image_url: `${process.env.BASE_URL}/prodImg/${product.image}`
+            image: `${process.env.BASE_URL}/prodImg/${product.image}`
         };
 
         // Return the product with image URL
@@ -123,14 +130,13 @@ const getProductById = async (id) => {
     }
 };
 
-const CACHE_KEY = "product_categories"; // Redis cache key for product categories
-const CACHE_EXPIRATION = 60 * 30; // 30 minutes
-
 // Fetch all product categories
 const getProductCategories = async () => {
+    const CACHE_EXPIRATION = 60 * 30; // 30 minutes
     try {
         // Check Redis cache first
-        const cachedCategories = await redisClient.get(CACHE_KEY);
+        const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
+        const cachedCategories = await redisClient.get(PRODUCT_CATEGORY_CACHE_KEY);
 
         if (cachedCategories) {
             console.log("Serving from Redis cache");
@@ -148,7 +154,7 @@ const getProductCategories = async () => {
         });
 
         // Store in Redis cache
-        await redisClient.setEx(CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
+        await redisClient.setEx(PRODUCT_CATEGORY_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
 
         return { success: true, categories };
     } catch (err) {
@@ -158,7 +164,16 @@ const getProductCategories = async () => {
 
 // Get top 7 recently added products
 const getRecentlyAddedProducts = async () => {
+    const CACHE_EXPIRATION = 60 * 5; // 5 minutes
     try {
+        const { NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
+        const cachedProducts = await redisClient.get(NEW_ARRIVALS_CACHE_KEY);
+
+        if (cachedProducts) {
+            console.log("Serving from Redis cache");
+            return { success: true, products: JSON.parse(cachedProducts) };
+        }
+
         const query = "SELECT id, name, description, price, image FROM product ORDER BY createdAt DESC, id DESC LIMIT 7"; // SQL query to fetch recently added products
 
         // Execute the query
@@ -175,8 +190,11 @@ const getRecentlyAddedProducts = async () => {
         // Add the image URL to each product object
         const productsWithImageURL = products.map((product) => ({
             ...product,
-            image_url: `${process.env.BASE_URL}/prodImg/${product.image}`
+            image: `${process.env.BASE_URL}/prodImg/${product.image}`
         }));
+
+        // Store in Redis cache
+        await redisClient.setEx(NEW_ARRIVALS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(productsWithImageURL));
 
         // Return the products with image URL
         return { success: true, products: productsWithImageURL };

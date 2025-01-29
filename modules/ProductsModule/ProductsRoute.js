@@ -14,7 +14,7 @@ const fs = require('fs');
 const productsController = require("./ProductsController");
 
 // Create directory if not exists
-const dir = './template_images';
+const dir = './product_images';
 if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
 }
@@ -50,6 +50,6 @@ router.get("/id/:id", productsController.getProductByIDHandler); // tested
 // Route for getting all product categories
 router.get("/categories", productsController.fetchProductCategoriesHandler); // tested
 
-router.get("/new-arrivals", productsController.getRecentProductsHandler); // 
+router.get("/new-arrivals", productsController.getRecentProductsHandler); // tested
  
 module.exports = router;
