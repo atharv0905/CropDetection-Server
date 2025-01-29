@@ -3,7 +3,7 @@
     Author: Atharv Mirgal
     Desc: This file contains the routes for the GenericModule
     Created: 28-01-2025
-    Last Modified: 28-01-2025
+    Last Modified: 29-01-2025
 */
 
 const express = require("express");
@@ -12,10 +12,10 @@ const multer = require("multer");
 const fs = require('fs');
 const genericController = require("./GenericController");
 
-// Create directory if not exists
-const dir = './template_images';
-if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir);
+// Create template directory if not exists
+const templateDir = './template_images';
+if (!fs.existsSync(templateDir)) {
+    fs.mkdirSync(templateDir);
 }
 
 // Multer configuration for templates
@@ -30,10 +30,34 @@ const templateStorage = multer.diskStorage({
 
 const templateUpload = multer({ storage: templateStorage });
 
+// Create promotion directory if not exists
+const promotionDir = './promotion_images';
+if (!fs.existsSync(promotionDir)) {
+    fs.mkdirSync(promotionDir);
+}
+
+// Multer configuration for promotions
+const promotionStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, "promotion_images/");
+    },
+    filename: function (req, file, cb) {
+        cb(null, req.body.name+".png");
+    },
+});
+
+const promotionUpload = multer({ storage: promotionStorage });
+
 router.post("/addTemplate", templateUpload.single("image"), genericController.addTemplateHandler); // tested
 
 router.get("/fetchTemplates", genericController.fetchTemplatesHandler); // tested
 
 router.delete("/deleteTemplate/:filename", genericController.deleteTemplateHandler); // tested
+
+router.post("/addPromotion", promotionUpload.single("image"), genericController.addPromotionHandler); // tested
+
+router.get("/fetchPromotions", genericController.fetchPromotionsHandler); // tested
+
+router.delete("/deletePromotion/:filename", genericController.deletePromotionHandler); // tested
 
 module.exports = router;

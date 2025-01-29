@@ -3,7 +3,7 @@
     Author: Atharv Mirgal
     Description: This is the main express server
     Created on: 27-1-2025
-    Last Modified: 28-1-2025
+    Last Modified: 29-1-2025
  */
 
 const express = require("express");
@@ -73,6 +73,7 @@ appEvents.on("dbReady", () => {
 
     app.use("/templates", express.static(path.join(__dirname, "template_images"))); // Serve template images
     app.use("/prodImg", express.static(path.join(__dirname, "product_images"))); // Serve product images
+    app.use("/promImgs", express.static(path.join(__dirname, "promotion_images"))); // Serve promotion images
 
     // Start the server
     server.listen(process.env.PORT, process.env.IP, () => {
