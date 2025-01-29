@@ -45,3 +45,35 @@ CREATE TABLE product (
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE user_search_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    search_query VARCHAR(255) NOT NULL,
+    searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+
+DELIMITER $$
+
+CREATE PROCEDURE ManageUserSearchHistory(
+    IN p_user_id VARCHAR(50), 
+    IN p_search_query VARCHAR(255)
+)
+BEGIN
+    -- Insert new search history record
+    INSERT INTO user_search_history (user_id, search_query) 
+    VALUES (p_user_id, p_search_query);
+
+    -- Delete the oldest record if more than 10 exist for this user
+    DELETE FROM user_search_history 
+    WHERE id IN (
+        SELECT id FROM (
+            SELECT id FROM user_search_history 
+            WHERE user_id = p_user_id 
+            ORDER BY searched_at ASC 
+            LIMIT 1 OFFSET 20
+        ) AS subquery
+    );
+END $$
+
+DELIMITER ;

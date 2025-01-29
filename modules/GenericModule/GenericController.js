@@ -24,7 +24,7 @@ const fetchTemplatesHandler = async (req, res) => {
 
 // Handles the deletion of a template
 const deleteTemplateHandler = async (req, res) => {
-    const response = await genericService.deleteTemplate(req.params.filename+".png");
+    const response = await genericService.deleteTemplate(req.params.filename + ".png");
     res.json(response);
 };
 
@@ -44,7 +44,21 @@ const fetchPromotionsHandler = async (req, res) => {
 
 // Handles the deletion of a promotion
 const deletePromotionHandler = async (req, res) => {
-    const response = await genericService.deletePromotion(req.params.filename+".png");
+    const response = await genericService.deletePromotion(req.params.filename + ".png");
+    res.json(response);
+};
+
+// Handles storing user search history
+const storeSearchHistoryHandler = async (req, res) => {
+    const { user_id, search_query } = req.body;
+    const response = await genericService.storeUserSearchHistory(user_id, search_query);
+    res.json(response);
+};
+
+// Handle fetching user search history
+const fetchSearchHistoryHandler = async (req, res) => {
+    const { user_id } = req.params;
+    const response = await genericService.fetchUserSearchHistory(user_id);
     res.json(response);
 };
 
@@ -54,5 +68,7 @@ module.exports = {
     deleteTemplateHandler,
     addPromotionHandler,
     fetchPromotionsHandler,
-    deletePromotionHandler
+    deletePromotionHandler,
+    storeSearchHistoryHandler,
+    fetchSearchHistoryHandler
 };

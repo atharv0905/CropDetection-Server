@@ -7,6 +7,13 @@
 */
 const fs = require("fs");
 const path = require("path");
+const redis = require("redis");
+const db = require("../../configuration/db");
+const { promisify } = require("util");
+
+// Initialize Redis client
+const redisClient = redis.createClient();
+redisClient.connect(); // For Redis v4+
 
 // Fetches all the templates from the template_images directory
 const fetchTemplates = async (req) => {
@@ -70,9 +77,109 @@ const deletePromotion = async (filename) => {
     }
 }
 
+// Stores the user's search history in Redis and the database
+const storeUserSearchHistory = async (userId, searchQuery) => {
+    const redisKey = `user:${userId}:search_history`;
+    const EXPIRATION_TIME = 60 * 60; // 1 hour expiration time
+
+    try {
+        // Fetch the existing search history from Redis
+        let searchHistory = await redisClient.get(redisKey);
+
+        // If the history is null or invalid, start with an empty array
+        if (searchHistory) {
+            try {
+                searchHistory = JSON.parse(searchHistory);
+            } catch (err) {
+                // If parsing fails, start with an empty array
+                console.error('Error parsing JSON from Redis:', err);
+                searchHistory = [];
+            }
+        } else {
+            searchHistory = []; // If no history exists, start with an empty array
+        }
+
+        // Add the new search query
+        searchHistory.push(searchQuery);
+
+        // Limit the array to the most recent 20 search queries
+        if (searchHistory.length > 20) {
+            searchHistory = searchHistory.slice(-20); // Keep only the last 20 queries
+        }
+
+        // Store the updated search history in Redis with expiration time
+        await redisClient.setEx(redisKey, EXPIRATION_TIME, JSON.stringify(searchHistory));
+
+        // Corrected SQL query using parameterized query
+        const sqlQuery = "CALL ManageUserSearchHistory(?, ?);";
+
+        // Store into the database using a promise to handle the query
+        await new Promise((resolve, reject) => {
+            db.query(sqlQuery, [userId, searchQuery], (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+
+        return { success: true, message: "Search history stored successfully" };
+    } catch (err) {
+        console.error('Error storing search history:', err);
+        return { success: false, message: err.message };
+    }
+};
+
+// Fetch user search history
+const fetchUserSearchHistory = async (userId) => {
+    const redisKey = `user:${userId}:search_history`;
+
+    try {
+        // Fetch the search history from Redis
+        let searchHistory = await redisClient.get(redisKey);
+
+        // If the history is null or invalid, return an empty array
+        if (searchHistory) {
+            try {
+                searchHistory = JSON.parse(searchHistory);
+                return { success: true, searchHistory };
+            } catch (err) {
+                // If parsing fails, return an empty array
+                console.error('Error parsing JSON from Redis:', err);
+                searchHistory = [];
+            }
+        }
+
+        const query = "SELECT search_query FROM user_search_history WHERE user_id = ? ORDER BY searched_at DESC;";
+
+        // Fetch the search history from the database
+        const dbSearchHistory = await new Promise((resolve, reject) => {
+            db.query(query, [userId], (err, result) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(result.map(row => row.search_query));
+                }
+            });
+        });
+
+        searchHistory = dbSearchHistory;
+
+        return { success: true, searchHistory };
+    } catch (err) {
+        console.error('Error fetching search history:', err);
+        return { success: false, message: err.message };
+    }
+};
+
+
+
 module.exports = {
     fetchTemplates,
     deleteTemplate,
     fetchPromotions,
-    deletePromotion
+    deletePromotion,
+    storeUserSearchHistory,
+    fetchUserSearchHistory
 };

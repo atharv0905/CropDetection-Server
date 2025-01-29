@@ -60,4 +60,8 @@ router.get("/fetchPromotions", genericController.fetchPromotionsHandler); // tes
 
 router.delete("/deletePromotion/:filename", genericController.deletePromotionHandler); // tested
 
+router.post("/store-search-history", genericController.storeSearchHistoryHandler); // tested
+
+router.get("/fetch-search-history/:user_id", genericController.fetchSearchHistoryHandler); // tested
+
 module.exports = router;
