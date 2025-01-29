@@ -53,5 +53,7 @@ router.get("/categories", productsController.fetchProductCategoriesHandler); // 
 router.get("/new-arrivals", productsController.getRecentProductsHandler); // tested
 
 router.get("/search/:name", productsController.searchProductsHandler); // tested
+
+router.get("/suggested-products/:id", productsController.suggestedProductsHandler); // tested
  
 module.exports = router;

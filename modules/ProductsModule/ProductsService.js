@@ -301,6 +301,39 @@ const searchProducts = async (searchTerm) => {
     }
 };
 
+// Function to show suggested products based on user search history
+const suggestProducts = async (userId) => {
+    const { fetchUserSearchHistory } = require('../GenericModule/GenericService');
+
+    try {
+        const { success, searchHistory, message } = await fetchUserSearchHistory(userId);
+
+        if (!success) {
+            return { success: false, message };
+        }
+
+        let suggestedProducts = await Promise.all(searchHistory.map(searchTerm => searchProducts(searchTerm)));
+
+        // flatten the array of arrays
+        suggestedProducts = suggestedProducts.map(p => p.products).flat();
+
+        // remove duplicates
+        suggestedProducts = suggestedProducts.filter((product, index, self) =>
+            index === self.findIndex((p) => (
+                p.id === product.id
+            ))
+        );
+
+        // pick random 4 products
+        suggestedProducts = suggestedProducts.sort(() => Math.random() - 0.5).slice(0, 4);
+
+        return { success: true, suggestedProducts };
+    } catch (err) {
+        console.error('Error suggesting products:', err);
+        return { success: false, message: err.message };
+    }
+};
+
 module.exports = {
     addProduct,
     updateProduct,
@@ -309,5 +342,6 @@ module.exports = {
     getProductCategories,
     clearCache,
     getRecentlyAddedProducts,
-    searchProducts
+    searchProducts,
+    suggestProducts
 };

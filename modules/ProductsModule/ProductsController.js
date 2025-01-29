@@ -91,6 +91,18 @@ const searchProductsHandler = async (req, res) => {
     }
 };
 
+// Function to get suggested products
+const suggestedProductsHandler = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const products = await productsService.suggestProducts(id);
+        res.json(products);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     addProductHandler,
     updateProductHandler,
@@ -98,5 +110,6 @@ module.exports = {
     getProductByIDHandler,
     fetchProductCategoriesHandler,
     getRecentProductsHandler,
-    searchProductsHandler
+    searchProductsHandler,
+    suggestedProductsHandler
 };
