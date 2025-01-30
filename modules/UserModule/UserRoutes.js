@@ -14,8 +14,8 @@ const userController = require('./UserController');
 const router = Router();
 
 // Defining the routes
-router.post('/sendOtp', userController.handleSendOtp);
-router.post('/verifyOtp', userController.handleVerifyOtp);
+router.post('/send-otp', userController.handleSendOtp);
+router.post('/verify-otp', userController.handleVerifyOtp);
 router.post('/signup', userController.handleCreateNewUser);
 
 // Exporting the router object

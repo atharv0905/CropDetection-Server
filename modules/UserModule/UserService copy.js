@@ -45,9 +45,6 @@ const createNewRegistration = async (phone) => {
     // Generating a unique id for the phone number
     const id = uuidv4();
 
-    // Phone No with country code
-    phone = '+91' + phone;
-
     // Generating a 6 digit OTP
     const otp = generateOTP();
 

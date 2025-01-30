@@ -7,7 +7,7 @@ CREATE TABLE user (
     last_name VARCHAR(20) NOT NULL,
     phone NUMERIC(12, 0) UNIQUE, 
     -- email VARCHAR(30) NOT NULL UNIQUE,
-    password VARCHAR(20) NOT NULL
+    password VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE user_address (
@@ -42,8 +42,6 @@ CREATE TABLE product (
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE product ADD FULLTEXT(name, description);
-
 CREATE TABLE user_search_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
@@ -76,6 +74,31 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE UpsertUserVerification(
+    IN p_id VARCHAR(50),
+    IN p_phone VARCHAR(20),
+    IN p_phoneOTP VARCHAR(10)
+)
+BEGIN
+    DECLARE record_count INT;
+
+    -- Check if the phone number already exists
+    SELECT COUNT(*) INTO record_count FROM user_verification WHERE phone = p_phone;
+
+    IF record_count = 0 THEN
+        -- Insert if the phone number does not exist
+        INSERT INTO user_verification (id, phone, phoneOTP) VALUES (p_id, p_phone, p_phoneOTP);
+    ELSE
+        -- Update if the phone number exists
+        UPDATE user_verification SET phoneOTP = p_phoneOTP WHERE phone = p_phone;
+    END IF;
+END $$
+
+DELIMITER ;
+
 
 
 

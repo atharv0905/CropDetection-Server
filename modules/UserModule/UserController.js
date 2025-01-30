@@ -3,11 +3,11 @@
  * Author: Yash Balotiya
  * Description: This file is used to handle the request and response of the user module.
  * Created on: 27/01/2025
- * Last Modified: 29/01/2025
+ * Last Modified: 30/01/2025
 */
 
 // Importing the required modules
-const userServer = require("./UserServer");
+const userService = require("./UserService");
 
 // Function to handle the request to send OTP
 const handleSendOtp = async (req, res) => {
@@ -16,7 +16,7 @@ const handleSendOtp = async (req, res) => {
 
     try {
         // Calling the server function to verify the phone number
-        const result = await userServer.createNewRegistration(phone);
+        const result = await userService.sendOTP(phone);
 
         // Checking if the server function returned an error
         if (result.error) {
@@ -39,7 +39,7 @@ const handleVerifyOtp = async (req, res) => {
 
     try {
         // Calling the server function to verify the OTP
-        const result = await userServer.verifyOtp(phone, otp);
+        const result = await userService.verifyOTP(phone, otp);
 
         // Checking if the server function returned an error
         if (result.error) {
@@ -62,7 +62,7 @@ const handleCreateNewUser = async (req, res) => {
 
     try {
         // Calling the server function to create a new user
-        const result = await userServer.createNewUser(firstName, lastName, phone, password);
+        const result = await userService.createNewUser(firstName, lastName, phone, password);
 
         // Checking if the server function returned an error
         if (result.error) {
