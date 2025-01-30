@@ -8,6 +8,7 @@
 const fs = require("fs");
 const path = require("path");
 const redis = require("redis");
+const utilityService = require("../UtilityModule/UtilityService");
 const db = require("../../configuration/db");
 const { promisify } = require("util");
 
@@ -114,15 +115,7 @@ const storeUserSearchHistory = async (userId, searchQuery) => {
         const sqlQuery = "CALL ManageUserSearchHistory(?, ?);";
 
         // Store into the database using a promise to handle the query
-        await new Promise((resolve, reject) => {
-            db.query(sqlQuery, [userId, searchQuery], (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
+        utilityService.sendQuery(sqlQuery, [userId, searchQuery]);
 
         return { success: true, message: "Search history stored successfully" };
     } catch (err) {
@@ -154,15 +147,7 @@ const fetchUserSearchHistory = async (userId) => {
         const query = "SELECT search_query FROM user_search_history WHERE user_id = ? ORDER BY searched_at DESC;";
 
         // Fetch the search history from the database
-        const dbSearchHistory = await new Promise((resolve, reject) => {
-            db.query(query, [userId], (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result.map(row => row.search_query));
-                }
-            });
-        });
+        const [dbSearchHistory] = utilityService.sendQuery(query, [userId]);
 
         searchHistory = dbSearchHistory;
 
@@ -172,8 +157,6 @@ const fetchUserSearchHistory = async (userId) => {
         return { success: false, message: err.message };
     }
 };
-
-
 
 module.exports = {
     fetchTemplates,

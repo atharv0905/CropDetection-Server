@@ -11,8 +11,8 @@ const redis = require("redis");
 const { promisify } = require("util");
 const stringSimilarity = require('string-similarity');
 const levenshtein = require('fast-levenshtein');
+const utilityService = require("../UtilityModule/UtilityService");
 const { console } = require("inspector");
-const e = require("cors");
 dotenv = require("dotenv");
 
 // Initialize Redis client
@@ -25,15 +25,7 @@ const addProduct = async (id, name, desc, price, category, image) => {
         const query = "INSERT INTO product (id, name, description, category, price, image) VALUES (?, ?, ?, ?, ?, ?)"; // SQL query to insert a new product
 
         // Execute the query
-        await new Promise((resolve, reject) => {
-            db.query(query, [id, name, desc, category, price, image], (err, result) => {
-                if (err) {
-                    reject(err); // Reject the promise if an error occurs
-                } else {
-                    resolve(result); // Resolve the promise if the query is successful
-                }
-            });
-        });
+        utilityService.sendQuery(query, [id, name, desc, category, price, image]);
 
         const { PRODUCT_CATEGORY_CACHE_KEY, NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
@@ -53,15 +45,7 @@ const updateProduct = async (id, name, desc, price, category, image) => {
         const query = "UPDATE product SET name = ?, category = ?, description = ?, price = ?, image = ? WHERE id = ?"; // SQL query to update product details
 
         // Execute the query
-        await new Promise((resolve, reject) => {
-            db.query(query, [name, category, desc, price, image, id], (err, result) => {
-                if (err) {
-                    reject(err); // Reject the promise if an error occurs
-                } else {
-                    resolve(result); // Resolve the promise if the query is successful
-                }
-            });
-        });
+        utilityService.sendQuery(query, [name, category, desc, price, image, id]);
 
         const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
@@ -80,16 +64,7 @@ const getProductsByCategory = async (category) => {
         const query = "SELECT id, name, description, price, image FROM product WHERE category = ?"; // SQL query to fetch products by category
 
         // Execute the query
-        const products = await new Promise((resolve, reject) => {
-            db.query(query, [category], (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
-
+        const products = utilityService.sendQuery(query, [category]);
         // Add the image URL to each product object
         const productsWithImageURL = products.map((product) => ({
             ...product,
@@ -110,15 +85,7 @@ const getProductById = async (id) => {
         const query = "SELECT name, description, price, image FROM product WHERE id = ?"; // SQL query to fetch product details by ID
 
         // Execute the query
-        const product = await new Promise((resolve, reject) => {
-            db.query(query, [id], (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result[0]);
-                }
-            });
-        });
+        const product = utilityService.sendQuery(query, [id]);
 
         // Add the image URL to the product object
         const productWithImageURL = {
@@ -150,12 +117,7 @@ const getProductCategories = async () => {
         // Fetch from database if cache is empty
         const query = "SELECT DISTINCT category FROM product";
 
-        const categories = await new Promise((resolve, reject) => {
-            db.query(query, (err, result) => {
-                if (err) reject(err);
-                else resolve(result.map(row => row.category)); // Extract categories
-            });
-        });
+        const categories = utilityService.sendQuery(query);
 
         // Store in Redis cache
         await redisClient.setEx(PRODUCT_CATEGORY_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
@@ -181,15 +143,7 @@ const getRecentlyAddedProducts = async () => {
         const query = "SELECT id, name, description, price, image FROM product WHERE createdAt >= NOW() - INTERVAL 2 DAY"; // SQL query to fetch recently added products
 
         // Execute the query
-        const products = await new Promise((resolve, reject) => {
-            db.query(query, (err, result) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(result);
-                }
-            });
-        });
+        const products = utilityService.sendQuery(query);
 
         // randomly select any 7 products
         const randomProducts = products.sort(() => Math.random() - 0.5).slice(0, 7);
@@ -234,15 +188,7 @@ const fetchProducts = async () => {
         }
 
         const query = "SELECT id, name, description, price FROM product";
-        const products = await new Promise((resolve, reject) => {
-            db.query(query, (err, results) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(results);
-                }
-            });
-        });
+        const products = utilityService.sendQuery(query);
 
         await redisClient.setEx(ALL_PRODUCTS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(products));
         return { success: true, products: products };
