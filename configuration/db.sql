@@ -6,7 +6,7 @@ CREATE TABLE user (
     first_name VARCHAR(20) NOT NULL,
     last_name VARCHAR(20) NOT NULL,
     phone NUMERIC(12, 0) UNIQUE, 
-    email VARCHAR(30) NOT NULL UNIQUE,
+    -- email VARCHAR(30) NOT NULL UNIQUE,
     password VARCHAR(20) NOT NULL
 );
 
@@ -26,11 +26,8 @@ CREATE TABLE user_address (
 
 CREATE TABLE user_verification (
     id VARCHAR(50) PRIMARY KEY,
-    email VARCHAR(30) UNIQUE NOT NULL,
-    emailVerified BOOLEAN, 
-    emailOTP NUMERIC(6, 0),
     phone NUMERIC(12, 0) UNIQUE,
-    phoneVerified BOOLEAN,
+    phoneVerified BOOLEAN DEFAULT FALSE,
     phoneOTP NUMERIC(6, 0),
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

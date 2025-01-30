@@ -3,7 +3,7 @@
  * Author: Atharv Mirgal
  * Description: This is the main express server
  * Created on: 27-1-2025
- * Last Modified: 27-1-2025
+ * Last Modified: 29-1-2025
  */
 
 const express = require("express");
@@ -64,6 +64,8 @@ appEvents.on("dbReady", () => {
     console.log("Initializing routes and socket handlers...");
 
     // Routes
+    const userRoutes = require("./modules/UserModule/UserRoutes");
+    app.use("/user", userRoutes)
 
     // Start the server
     server.listen(process.env.PORT, process.env.IP, () => {
