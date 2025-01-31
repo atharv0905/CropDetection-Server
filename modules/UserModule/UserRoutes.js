@@ -14,9 +14,19 @@ const userController = require('./UserController');
 const router = Router();
 
 // Defining the routes
-router.post('/send-otp', userController.handleSendOtp);
-router.post('/verify-otp', userController.handleVerifyOtp);
-router.post('/signup', userController.handleCreateNewUser);
+router.post('/send-otp', userController.handleSendOtp); // tested
+
+router.post('/verify-otp', userController.handleVerifyOtp); //  tested
+
+router.post('/signup', userController.handleCreateNewUser); // tested
+
+router.post('/login', userController.handleLogin); // tested
+
+router.get('/protected', userController.verifyAccessToken, (req, res) => { // tested
+    res.status(200).json({ success: true, message: "Access granted" });
+})
+
+router.post('/refresh-token', userController.handleRefreshAccessToken); // tested
 
 // Exporting the router object
 module.exports = router;

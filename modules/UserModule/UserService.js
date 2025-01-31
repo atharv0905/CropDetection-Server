@@ -14,6 +14,7 @@ const bycrypt = require('bcrypt');
 const { sendSMS } = require("../../configuration/sms");
 const utilityService = require("../UtilityModule/UtilityService");
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 
 // Function to generate 6 digit OTP
 const generateOTP = () => {
@@ -54,6 +55,15 @@ const verifyOTP = async(phone, otp) => {
             throw new Error("Invalid OTP");
         }
 
+        // check for OTP expiry
+        const currentTime = new Date();
+        const otpTime = new Date(result[0].createdAt);
+        const timeDiff = Math.abs(currentTime - otpTime);
+
+        if(timeDiff > 15 * 60 * 1000){
+            throw new Error("OTP expired");
+        }
+        
         const verifyOTPQuery = "UPDATE user_verification SET phoneVerified = 1 WHERE phone = ?";
         await utilityService.sendQuery(verifyOTPQuery, [phone], "Failed to verify OTP");
 
@@ -87,9 +97,59 @@ const createNewUser = async(firstName, lastName, phone, password) => {
     }
 }
 
+// Function to login user
+const login = async(phone, password) => {
+    try{
+        const checkPhoneQuery = "SELECT * FROM user WHERE phone = ?";
+        const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
+        if(result.length === 0){
+            throw new Error("Phone number not registered");
+        }
+
+        const user = result[0];
+        const match = await bycrypt.compare(password, user.password);
+        if(!match){
+            throw new Error("Invalid password");
+        }
+
+        const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+        const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
+        return { success: true, message: "User logged in successfully", accessToken, refreshToken };
+    }catch(err){
+        console.error("Error logging in user:", err);
+        throw new Error("Failed to login user");
+    }
+};
+
+// Function to refresh access token
+const refreshAccessToken = async(refreshToken) => {
+    try{
+
+        const decoded = await new Promise((resolve, reject) => {
+            jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+                if(err){
+                    reject(err);
+                }
+                resolve(decoded);
+            });
+        });
+
+        const accessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+
+        return { success: true, message: "Access token refreshed successfully", accessToken };
+    }catch(err){
+        console.error("Error refreshing access token:", err);
+        throw new Error("Failed to refresh access token");
+    }
+};
+
 // Exporting the server functions
 module.exports = {
     sendOTP,
     verifyOTP,
-    createNewUser
+    createNewUser,
+    login,
+    refreshAccessToken
 }
