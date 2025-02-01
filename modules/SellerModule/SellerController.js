@@ -105,11 +105,11 @@ const handleVerifyOtp = async (req, res) => {
 // Function to handle the request to create a new user
 const handleCreateNewUser = async (req, res) => {
     // Extracting the required data from the request body
-    const { firstName, lastName, phone, password } = req.body;
+    const { firstName, lastName, email, phone, gst, password } = req.body;
 
     try {
         // Calling the server function to create a new user
-        const result = await sellerService.createNewUser(firstName, lastName, phone, password);
+        const result = await sellerService.createNewUser(firstName, lastName, email, phone, gst, password);
 
         // Checking if the server function returned an error
         if (result.error) {
@@ -128,11 +128,11 @@ const handleCreateNewUser = async (req, res) => {
 // Function to handle the request to login user
 const handleLogin = async (req, res) => {
     // Extracting the required data from the request body
-    const { phone, password } = req.body;
+    const { email, password } = req.body;
 
     try {
         // Calling the server function to login user
-        const result = await sellerService.login(phone, password);
+        const result = await sellerService.login(email, password);
 
         // Checking if the server function returned an error
         if (result.error) {

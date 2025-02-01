@@ -136,35 +136,53 @@ const verifyOTP = async(phone, otp) => {
 };
 
 // Function to create new user
-const createNewUser = async(firstName, lastName, phone, password) => {
+const createNewUser = async(firstName, lastName, email, phone, gst, password) => {
     try{
-        const checkPhoneQuery = "SELECT * FROM user WHERE phone = ?";
-        const phoneNumber = '+91' + phone;
-        const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
-        if(result.length > 0){
+        const checkEmailQuery = "SELECT * FROM seller WHERE email = ?";
+        const emailResult = await utilityService.sendQuery(checkEmailQuery, [email], "Failed to check email");
+        if(emailResult.length > 0){
+            throw new Error("Email already registered");
+        }
+
+        const checkPhoneQuery = "SELECT * FROM seller WHERE phone = ?";
+        const phoneResult = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
+        if(phoneResult.length > 0){
             throw new Error("Phone number already registered");
         }
 
-        const insertUserQuery = "INSERT INTO user (id, first_name, last_name, phone, password) VALUES (?, ?, ?, ?, ?)";
-        const id = uuidv4();
-        password = await bycrypt.hash(password, 12);
+        const checkGSTQuery = "SELECT * FROM seller WHERE gst = ?";
+        const gstResult = await utilityService.sendQuery(checkGSTQuery, [gst], "Failed to check GST number");
+        if(gstResult.length > 0){
+            throw new Error("GST number already registered");
+        }
 
-        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, phone, password], "Failed to insert user");
+        const hashedPassword = await bycrypt.hash(password, 10);
 
-        return { success: true, message: "User created successfully" };
+        const checkVerificationQuery = "SELECT * FROM seller_verification WHERE email = ? AND phone = ? AND emailVerified = 1 AND phoneVerified = 1";
+        const verificationResult = await utilityService.sendQuery(checkVerificationQuery, [email, phone], "Failed to check verification");
+
+        if(verificationResult.length === 0){
+            throw new Error("Email or phone not verified");
+        }
+
+        const id = verificationResult[0].id;
+        const insertUserQuery = "CALL InsertSeller(?, ?, ?, ?, ?, ?, ?);";
+        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, phone, email, gst, hashedPassword], "Failed to create new seller");
+
+        return { success: true, message: "Seller created successfully" };
     }catch(err){
-        console.error("Error creating new user:", err);
-        throw new Error("Failed to create new user");
+        console.error("Error creating new seller:", err);
+        throw new Error("Failed to create new seller");
     }
 }
 
 // Function to login user
-const login = async(phone, password) => {
+const login = async(email, password) => {
     try{
-        const checkPhoneQuery = "SELECT * FROM user WHERE phone = ?";
-        const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
+        const checkPhoneQuery = "SELECT * FROM seller WHERE email = ?";
+        const result = await utilityService.sendQuery(checkPhoneQuery, [email], "Failed to check email");
         if(result.length === 0){
-            throw new Error("Phone number not registered");
+            throw new Error("Email not registered");
         }
 
         const user = result[0];

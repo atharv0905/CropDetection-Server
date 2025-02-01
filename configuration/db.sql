@@ -172,6 +172,36 @@ END $$
 
 DELIMITER ;
 
+DELIMITER $$
+CREATE PROCEDURE InsertSeller(
+    IN p_id VARCHAR(50),
+    IN p_first_name VARCHAR(20),
+    IN p_last_name VARCHAR(20),
+    IN p_phone NUMERIC(12, 0),
+    IN p_email VARCHAR(30),
+    IN p_gst VARCHAR(20),
+    IN p_password VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    -- Insert into seller table
+    INSERT INTO seller (id, first_name, last_name, phone, email, gst, password)
+    VALUES (p_id, p_first_name, p_last_name, p_phone, p_email, p_gst, p_password);
+    
+    -- Delete from seller_verification table
+    DELETE FROM seller_verification WHERE id = p_id;
+    
+    COMMIT;
+END $$
+DELIMITER ;
+
+
 
 
 
