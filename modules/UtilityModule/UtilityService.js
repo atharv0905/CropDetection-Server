@@ -5,7 +5,6 @@
     Created: 30-01-2025
     Last Modified: 30-01-2025
 */
-const e = require("cors");
 const db = require("../../configuration/db");
 
 const sendQuery = async (query, params, error) => {

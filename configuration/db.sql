@@ -1,6 +1,8 @@
 CREATE DATABASE CROPDETECTION;
 USE CROPDETECTION;
 
+-- Tables 
+-- user tables
 CREATE TABLE user (
 	id VARCHAR(50) PRIMARY KEY,
     first_name VARCHAR(20) NOT NULL,
@@ -8,28 +10,6 @@ CREATE TABLE user (
     phone NUMERIC(12, 0) UNIQUE, 
     -- email VARCHAR(30) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE seller (
-	id VARCHAR(50) PRIMARY KEY,
-    first_name VARCHAR(20) NOT NULL,
-    last_name VARCHAR(20) NOT NULL,
-    business_name VARCHAR(50) NOT NULL,
-    phone NUMERIC(12, 0) UNIQUE, 
-    email VARCHAR(30) NOT NULL UNIQUE,
-    gst VARCHAR(20) NOT NULL UNIQUE,
-    password VARCHAR(100) NOT NULL
-);
-
-CREATE TABLE seller_verification (
-    id VARCHAR(50) PRIMARY KEY,
-    phone NUMERIC(12, 0) UNIQUE,
-    phoneVerified BOOLEAN DEFAULT FALSE,
-    phoneOTP NUMERIC(6, 0),
-    email VARCHAR(30) UNIQUE,
-    emailVerified BOOLEAN DEFAULT FALSE,
-    emailOTP NUMERIC(6, 0),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE user_address (
@@ -54,6 +34,38 @@ CREATE TABLE user_verification (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE user_search_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    search_query VARCHAR(255) NOT NULL,
+    searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+
+-- seller tables
+CREATE TABLE seller (
+	id VARCHAR(50) PRIMARY KEY,
+    first_name VARCHAR(20) NOT NULL,
+    last_name VARCHAR(20) NOT NULL,
+    business_name VARCHAR(50) NOT NULL,
+    phone NUMERIC(12, 0) UNIQUE, 
+    email VARCHAR(30) NOT NULL UNIQUE,
+    gst VARCHAR(20) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE seller_verification (
+    id VARCHAR(50) PRIMARY KEY,
+    phone NUMERIC(12, 0) UNIQUE,
+    phoneVerified BOOLEAN DEFAULT FALSE,
+    phoneOTP NUMERIC(6, 0),
+    email VARCHAR(30) UNIQUE,
+    emailVerified BOOLEAN DEFAULT FALSE,
+    emailOTP NUMERIC(6, 0),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- product tables 
 CREATE TABLE product (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -64,14 +76,82 @@ CREATE TABLE product (
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE user_search_history (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+-- cart tables 
+CREATE TABLE cart (
+    id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
-    search_query VARCHAR(255) NOT NULL,
-    searched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
 );
 
+CREATE TABLE cart_item (
+    id VARCHAR(50) PRIMARY KEY,
+    cart_id VARCHAR(50) NOT NULL,
+    product_id VARCHAR(50) NOT NULL,
+    quantity NUMERIC(3, 0) NOT NULL,
+    FOREIGN KEY (cart_id) REFERENCES cart(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
+);
+
+CREATE TABLE pending_cart_deletion (
+    cart_id VARCHAR(50) PRIMARY KEY
+);
+
+
+-- views
+CREATE VIEW cart_summary AS
+SELECT 
+    u.id AS user_id,
+    c.id AS cart_id,
+    ci.id AS cart_item_id,
+    p.id AS product_id,
+    p.name,
+    p.description,
+    p.price AS rate,
+    ci.quantity,
+    (ci.quantity * p.price) AS total_price,
+    p.image
+FROM cart_item ci
+JOIN cart c ON ci.cart_id = c.id
+JOIN user u ON c.user_id = u.id
+JOIN product p ON ci.product_id = p.id;
+
+
+-- events
+DELIMITER $$
+
+CREATE EVENT delete_empty_carts
+ON SCHEDULE EVERY 1 MINUTE
+DO
+BEGIN
+    DELETE FROM cart WHERE id IN (SELECT cart_id FROM pending_cart_deletion);
+    DELETE FROM pending_cart_deletion;
+END $$
+
+DELIMITER ;
+
+
+-- triggers 
+DELIMITER $$
+
+CREATE TRIGGER after_cart_item_delete
+AFTER DELETE ON cart_item
+FOR EACH ROW
+BEGIN
+    DECLARE item_count INT;
+
+    -- Count remaining items in the cart
+    SELECT COUNT(*) INTO item_count FROM cart_item WHERE cart_id = OLD.cart_id;
+
+    -- If no items remain, add the cart_id to pending deletion table
+    IF item_count <= 0 THEN
+        INSERT IGNORE INTO pending_cart_deletion (cart_id) VALUES (OLD.cart_id);
+    END IF;
+END $$
+
+DELIMITER ;
+
+
+-- procedures 
 DELIMITER $$
 
 CREATE PROCEDURE ManageUserSearchHistory(
