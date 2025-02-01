@@ -73,6 +73,9 @@ appEvents.on("dbReady", () => {
 
     const userRoutes = require("./modules/UserModule/UserRoutes");
     app.use("/user", userRoutes)
+
+    const sellerRoutes = require("./modules/SellerModule/SellerRoutes");
+    app.use("/seller", sellerRoutes);
     
     app.use("/templates", express.static(path.join(__dirname, "template_images"))); // Serve template images
     app.use("/prodImg", express.static(path.join(__dirname, "product_images"))); // Serve product images
