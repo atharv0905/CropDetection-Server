@@ -14,6 +14,7 @@ CREATE TABLE seller (
 	id VARCHAR(50) PRIMARY KEY,
     first_name VARCHAR(20) NOT NULL,
     last_name VARCHAR(20) NOT NULL,
+    business_name VARCHAR(50) NOT NULL,
     phone NUMERIC(12, 0) UNIQUE, 
     email VARCHAR(30) NOT NULL UNIQUE,
     gst VARCHAR(20) NOT NULL UNIQUE,
@@ -177,6 +178,7 @@ CREATE PROCEDURE InsertSeller(
     IN p_id VARCHAR(50),
     IN p_first_name VARCHAR(20),
     IN p_last_name VARCHAR(20),
+    IN p_business_name VARCHAR(50),
     IN p_phone NUMERIC(12, 0),
     IN p_email VARCHAR(30),
     IN p_gst VARCHAR(20),
@@ -191,8 +193,8 @@ BEGIN
     START TRANSACTION;
     
     -- Insert into seller table
-    INSERT INTO seller (id, first_name, last_name, phone, email, gst, password)
-    VALUES (p_id, p_first_name, p_last_name, p_phone, p_email, p_gst, p_password);
+    INSERT INTO seller (id, first_name, last_name, business_name, phone, email, gst, password)
+    VALUES (p_id, p_first_name, p_last_name, p_business_name, p_phone, p_email, p_gst, p_password);
     
     -- Delete from seller_verification table
     DELETE FROM seller_verification WHERE id = p_id;

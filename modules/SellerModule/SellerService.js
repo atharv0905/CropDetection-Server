@@ -136,7 +136,7 @@ const verifyOTP = async(phone, otp) => {
 };
 
 // Function to create new user
-const createNewUser = async(firstName, lastName, email, phone, gst, password) => {
+const createNewUser = async(firstName, lastName, businessName, email, phone, gst, password) => {
     try{
         const checkEmailQuery = "SELECT * FROM seller WHERE email = ?";
         const emailResult = await utilityService.sendQuery(checkEmailQuery, [email], "Failed to check email");
@@ -166,8 +166,8 @@ const createNewUser = async(firstName, lastName, email, phone, gst, password) =>
         }
 
         const id = verificationResult[0].id;
-        const insertUserQuery = "CALL InsertSeller(?, ?, ?, ?, ?, ?, ?);";
-        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, phone, email, gst, hashedPassword], "Failed to create new seller");
+        const insertUserQuery = "CALL InsertSeller(?, ?, ?, ?, ?, ?, ?, ?);";
+        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, businessName, phone, email, gst, hashedPassword], "Failed to create new seller");
 
         return { success: true, message: "Seller created successfully" };
     }catch(err){

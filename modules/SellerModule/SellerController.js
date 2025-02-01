@@ -105,11 +105,11 @@ const handleVerifyOtp = async (req, res) => {
 // Function to handle the request to create a new user
 const handleCreateNewUser = async (req, res) => {
     // Extracting the required data from the request body
-    const { firstName, lastName, email, phone, gst, password } = req.body;
+    const { firstName, lastName, businessName, email, phone, gst, password } = req.body;
 
     try {
         // Calling the server function to create a new user
-        const result = await sellerService.createNewUser(firstName, lastName, email, phone, gst, password);
+        const result = await sellerService.createNewUser(firstName, lastName, businessName, email, phone, gst, password);
 
         // Checking if the server function returned an error
         if (result.error) {
