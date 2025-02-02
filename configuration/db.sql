@@ -90,6 +90,19 @@ CREATE TABLE consultant_verification (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE appointment (
+	id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    consultant_id VARCHAR(50) NOT NULL,
+    mode VARCHAR(7) CHECK(mode IN ('ONLINE', 'OFFLINE')),
+    date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    status VARCHAR(10) CHECK(status IN ('PENDING', 'CONFIRMED', 'CANCELLED')) DEFAULT 'PENDING',
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+    FOREIGN KEY (consultant_id) REFERENCES consultant(id) ON DELETE CASCADE
+);
+
 -- product tables 
 CREATE TABLE product (
     id VARCHAR(50) PRIMARY KEY,

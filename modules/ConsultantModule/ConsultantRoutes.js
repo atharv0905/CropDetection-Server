@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
     filename: function (req, file, cb) {
         const originalName = file.originalname.replace(/\.[^/.]+$/, ""); // Remove extension
         const id = req.id || req.body.id;
-        const filename = id + "_" + originalName + ".png"; // Append original name and .png
+        const filename = id + ".png"; // Append original name and .png
         cb(null, filename);
     },
 });
@@ -51,6 +51,8 @@ router.post('/signup', (req, res, next) => {
     next();
 }, upload.single('profile'), consultantController.handleCreateNewUser); // tested
 
+router.put('/update', upload.single('profile'), consultantController.verifyAccessToken, consultantController.handleUpdateUser); // tested
+
 router.post('/login', consultantController.handleLogin); // tested
 
 router.get('/protected', consultantController.verifyAccessToken, (req, res) => { // tested
@@ -58,6 +60,14 @@ router.get('/protected', consultantController.verifyAccessToken, (req, res) => {
 })
 
 router.post('/refresh-token', consultantController.handleRefreshAccessToken); // tested
+
+router.post('/book-appointment', consultantController.verifyAccessToken, consultantController.handleBookAppointment); // tested
+
+router.post('/change-status', consultantController.verifyAccessToken, consultantController.handleChangeAppointmentStatus); // tested
+
+router.get('/get-appointments', consultantController.verifyAccessToken, consultantController.handleFetchAppointments); // tested
+
+router.get('/get-consultant-appointments', consultantController.verifyAccessToken, consultantController.handleFetchConsultantAppointments); // tested
 
 // Exporting the router object
 module.exports = router;

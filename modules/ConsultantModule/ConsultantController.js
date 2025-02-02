@@ -128,6 +128,30 @@ const handleCreateNewUser = async (req, res) => {
     }
 };
 
+// Function to handle the request to update user details
+const handleUpdateUser = async (req, res) => {
+    const { firstName, lastName, expertise, experience, startingCharges } = req.body;
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    let profile = req.file.filename;
+
+    try {
+        // Calling the server function to update user details
+        const result = await consultantService.updateUser(token, firstName, lastName, expertise, experience, startingCharges, profile);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Sending the response to the client
+        return res.status(200).json({ success: true });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to update user" });
+    }
+};
+
 // Function to handle the request to login user
 const handleLogin = async (req, res) => {
     // Extracting the required data from the request body
@@ -153,7 +177,7 @@ const handleLogin = async (req, res) => {
 
 // Middleware to verify the access token
 const verifyAccessToken = async (req, res, next) => {
-    const token = req.headers['authorization'].replace('Bearer ', '');
+    const token = req.headers['authorization']?.replace('Bearer ', '') || "";
 
     if(!token){
         return res.status(401).json({ error: "Access token not found" });
@@ -196,14 +220,112 @@ const handleRefreshAccessToken = async (req, res) => {
     }
 };
 
+// Function to handle booking appointment
+const handleBookAppointment = async (req, res) => {
+    // Extracting the required data from the request body
+    const { consultantId, mode, date, start_time, end_time } = req.body;
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const userId = decoded.id;
+    try {
+        // Calling the server function to book appointment
+        const result = await consultantService.bookAppointment(consultantId, userId, mode, date, start_time, end_time);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Sending the response to the client
+        return res.status(201).json({ success: true });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to book appointment" });
+    }
+};
+
+// Function to handle changing status of appointment
+const handleChangeAppointmentStatus = async (req, res) => {
+    // Extracting the required data from the request body
+    const { appointmentId, status } = req.body;
+    try {
+        // Calling the server function to change appointment status
+        const result = await consultantService.changeAppointmentStatus(appointmentId, status);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Sending the response to the client
+        return res.status(200).json({ success: true });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to change appointment status" });
+    }
+};
+
+// Function to handle fetching appointment details for user
+const handleFetchAppointments = async (req, res) => {
+    // Extracting the required data from the request body
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const userId = decoded.id;
+    try {
+        // Calling the server function to fetch appointments
+        const result = await consultantService.getAppointmentDetails(userId);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Sending the response to the client
+        return res.status(200).json({ success: true, appointments: result.appointments });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to fetch appointments" });
+    }
+};
+
+const handleFetchConsultantAppointments = async (req, res) => {
+    // Extracting the required data from the request body
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const userId = decoded.id;
+    try {
+        // Calling the server function to fetch appointments
+        const result = await consultantService.getConsultantAppointmentDetails(userId);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Sending the response to the client
+        return res.status(200).json({ success: true, appointments: result.appointments });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to fetch appointments" });
+    }
+};
 // Exporting the controller functions
 module.exports = {
     handleSendEmailOtp,
     handleVerifyEmailOtp,
     handleCreateNewUser,
+    handleUpdateUser,
     handleSendOtp,
     handleVerifyOtp,
     handleLogin,
     verifyAccessToken,
-    handleRefreshAccessToken
+    handleRefreshAccessToken,
+    handleBookAppointment,
+    handleChangeAppointmentStatus,
+    handleFetchAppointments,
+    handleFetchConsultantAppointments
 }
