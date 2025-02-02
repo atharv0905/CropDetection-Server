@@ -1,9 +1,9 @@
 /**
  * File: server.js
- * Author: Atharv Mirgal
+ * Author: Atharv Mirgal, Yash Balotiya
  * Description: This is the main express server
  * Created on: 27-1-2025
- * Last Modified: 01-02-2025
+ * Last Modified: 02-02-2025
  */
 
 const express = require("express");
@@ -79,6 +79,9 @@ appEvents.on("dbReady", () => {
 
     const cartRoutes = require("./modules/CartModule/CartRoutes");
     app.use("/cart", cartRoutes);
+
+    const profileRoutes = require("./modules/ProfileModule/ProfileRoutes");
+    app.use("/profile", profileRoutes);
     
     app.use("/templates", express.static(path.join(__dirname, "template_images"))); // Serve template images
     app.use("/prodImg", express.static(path.join(__dirname, "product_images"))); // Serve product images

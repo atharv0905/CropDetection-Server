@@ -219,6 +219,45 @@ END $$
 
 DELIMITER ;
 
+-- Procedure to remove entry from user verification table and insert it into user table
+DELIMITER $$
+CREATE PROCEDURE InsertUser(
+    IN p_id VARCHAR(50),
+    IN p_first_name VARCHAR(20),
+    IN p_last_name VARCHAR(20),
+    IN p_phone NUMERIC(12, 0),
+    IN p_password VARCHAR(100),
+    IN task VARCHAR(10)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    IF task = 'insert' THEN
+        -- Insert into user table
+        INSERT INTO user (id, first_name, last_name, phone, password)
+        VALUES (p_id, p_first_name, p_last_name, p_phone, p_password);
+
+    ELSEIF task = 'update' THEN
+        -- Update user phone number
+        UPDATE user
+        SET phone = p_phone
+        WHERE id = p_id;
+
+    END IF;
+    
+    -- Delete from seller_verification table
+    -- DELETE FROM user_verification WHERE id = p_id;
+    DELETE FROM user_verification WHERE phone = p_phone;
+    
+    COMMIT;
+END $$
+DELIMITER ;
+
 DELIMITER $$
 
 CREATE PROCEDURE UpsertSellerVerificationByEmail(
