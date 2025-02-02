@@ -10,7 +10,6 @@ const redis = require("redis");
 const stringSimilarity = require('string-similarity');
 const utilityService = require("../UtilityModule/UtilityService");
 const { v4: uuidv4 } = require("uuid");
-const { console } = require("inspector");
 dotenv = require("dotenv");
 
 // Initialize Redis client
@@ -21,27 +20,27 @@ redisClient.connect(); // For Redis v4+
 const addProduct = async (id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
         const query = `INSERT INTO product 
-            (id, name, brand_name, title, description, category, cost_price, selling_price, 
+            (id, name, brand_name, title, description, category, cost_price, selling_price, image,
             about_company_line1, about_company_line2, about_company_line3, 
             about_product_line1, about_product_line2, about_product_line3, about_product_line4) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const aboutCompany = about_company || [];
         const aboutProduct = about_product || [];
 
         // Execute the query to insert product details
         await utilityService.sendQuery(query, [
-            id, name, brand_name, title, desc, category, cost_price, selling_price,
+            id, name, brand_name, title, desc, category, cost_price, selling_price, images[0], 
             aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
             aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || ''
-        ]);
+        ], "Inserting product failed");
 
         // Insert images if provided
         if (images && images.length > 0) {
             const imageQuery = "INSERT INTO product_image (id, product_id, image) VALUES (?, ?, ?)";
             for (const image of images) {
                 const imageId = uuidv4();
-                await utilityService.sendQuery(imageQuery, [imageId, id, image]);
+                await utilityService.sendQuery(imageQuery, [imageId, id, image], "Inserting product image failed");
             }
         }
 
@@ -63,7 +62,7 @@ const updateProduct = async (id, name, brand_name, title, desc, category, cost_p
     try {
         const query = `UPDATE product SET 
             name = ?, brand_name = ?, title = ?, description = ?, category = ?, 
-            cost_price = ?, selling_price = ?, 
+            cost_price = ?, selling_price = ?, image = ?,
             about_company_line1 = ?, about_company_line2 = ?, about_company_line3 = ?, 
             about_product_line1 = ?, about_product_line2 = ?, about_product_line3 = ?, about_product_line4 = ? 
             WHERE id = ?`; 
@@ -73,7 +72,7 @@ const updateProduct = async (id, name, brand_name, title, desc, category, cost_p
 
         // Execute the query to update product details
         const res = await utilityService.sendQuery(query, [
-            name, brand_name, title, desc, category, cost_price, selling_price,
+            name, brand_name, title, desc, category, cost_price, selling_price, images[0],
             aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
             aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '',
             id
@@ -114,10 +113,11 @@ const updateProduct = async (id, name, brand_name, title, desc, category, cost_p
 // Fetch products by category and the image URL
 const getProductsByCategory = async (category) => {
     try {
-        const query = "SELECT id, name, description, price, image FROM product WHERE category = ?"; // SQL query to fetch products by category
+        const query = "SELECT id, name, title, description, selling_price, image FROM product WHERE category = ?"; // SQL query to fetch products by category
 
         // Execute the query
-        const products = utilityService.sendQuery(query, [category]);
+        const products = await utilityService.sendQuery(query, [category]);
+
         // Add the image URL to each product object
         const productsWithImageURL = products.map((product) => ({
             ...product,
@@ -135,15 +135,20 @@ const getProductsByCategory = async (category) => {
 // Fetch product details by ID and the image URL
 const getProductById = async (id) => {
     try {
-        const query = "SELECT name, description, price, image FROM product WHERE id = ?"; // SQL query to fetch product details by ID
+        const query = "SELECT * FROM product WHERE id = ?"; // SQL query to fetch product details by ID
+        let product = await utilityService.sendQuery(query, [id]);
 
-        // Execute the query
-        const product = utilityService.sendQuery(query, [id]);
+        const imagesQuery = "SELECT image FROM product_image WHERE product_id = ?"; // SQL query to fetch product images by ID
+        const images = await utilityService.sendQuery(imagesQuery, [id]);
 
-        // Add the image URL to the product object
+        product = product[0];
+
+        // Ensure 'images' is an array before using map
+        const imagesArray = Array.isArray(images) ? images : [];
         const productWithImageURL = {
             ...product,
-            image: `${process.env.BASE_URL}/prodImg/${product.image}`
+            image: `${process.env.BASE_URL}/prodImg/${product.image}`,
+            images: imagesArray.map((img) => `${process.env.BASE_URL}/prodImg/${img.image}`)
         };
 
         // Return the product with image URL
@@ -170,8 +175,10 @@ const getProductCategories = async () => {
         // Fetch from database if cache is empty
         const query = "SELECT DISTINCT category FROM product";
 
-        const categories = utilityService.sendQuery(query);
+        let categories = await utilityService.sendQuery(query);
 
+        // Extract the category names from the result
+        categories = categories.map((category) => category.category);
         // Store in Redis cache
         await redisClient.setEx(PRODUCT_CATEGORY_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
 
@@ -193,16 +200,13 @@ const getRecentlyAddedProducts = async () => {
             return { success: true, products: JSON.parse(cachedProducts) };
         }
 
-        const query = "SELECT id, name, description, price, image FROM product WHERE createdAt >= NOW() - INTERVAL 2 DAY"; // SQL query to fetch recently added products
+        const query = "SELECT id, name, title, description, selling_price, image FROM product WHERE createdAt >= NOW() - INTERVAL 2 DAY"; // SQL query to fetch recently added products
 
         // Execute the query
-        const products = utilityService.sendQuery(query);
-
-        // randomly select any 7 products
-        const randomProducts = products.sort(() => Math.random() - 0.5).slice(0, 7);
+        const products = await utilityService.sendQuery(query);
 
         // Add the image URL to each product object
-        const productsWithImageURL = randomProducts.map((product) => ({
+        const productsWithImageURL = products.map((product) => ({
             ...product,
             image: `${process.env.BASE_URL}/prodImg/${product.image}`
         }));
@@ -240,8 +244,8 @@ const fetchProducts = async () => {
             return { success: true, products: JSON.parse(cachedProducts) };
         }
 
-        const query = "SELECT id, name, description, price FROM product";
-        const products = utilityService.sendQuery(query);
+        const query = "SELECT id, name, title, description, selling_price FROM product";
+        const products = await utilityService.sendQuery(query);
 
         await redisClient.setEx(ALL_PRODUCTS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(products));
         return { success: true, products: products };

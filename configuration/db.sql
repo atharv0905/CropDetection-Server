@@ -75,6 +75,7 @@ CREATE TABLE product (
     category VARCHAR(20) NOT NULL CHECK(category IN ('Fertilizer', 'Pesticide', 'Seeds')),
     cost_price NUMERIC(6, 2) NOT NULL,
     selling_price NUMERIC(6, 2) NOT NULL,
+    image VARCHAR(100) NOT NULL,
     about_company_line1 VARCHAR(100) NOT NULL,
     about_company_line2 VARCHAR(100),
     about_company_line3 VARCHAR(100),
@@ -84,7 +85,7 @@ CREATE TABLE product (
     about_product_line4 VARCHAR(100),
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-
+            
 CREATE TABLE product_image (
     id VARCHAR(50) PRIMARY KEY,
     product_id VARCHAR(50) NOT NULL,
