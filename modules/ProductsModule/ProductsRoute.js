@@ -25,21 +25,24 @@ const storage = multer.diskStorage({
         cb(null, "product_images/");
     },
     filename: function (req, file, cb) {
-        const filename = req.id ? req.id + ".png" : req.body.id ? req.body.id + ".png" : "default.png";
+        const originalName = file.originalname.replace(/\.[^/.]+$/, ""); // Remove extension
+        const id = req.id || req.body.id;
+        const filename = id + "_" + originalName + ".png"; // Append original name and .png
         cb(null, filename);
     },
 });
 
 const upload = multer({ storage: storage });
 
-// Route for adding new product
+// Route for adding new product (Supports Multiple Images)
 router.post("/add", (req, res, next) => {
     req.id = uuid.v4();
     next();
-}, upload.single("image"), productsController.addProductHandler); // tested
+}, upload.array("images", 5), productsController.addProductHandler); // Accepts up to 5 images
+
 
 // Route for updating details of a product
-router.put("/update", upload.single("image"), productsController.updateProductHandler); // tested
+router.put("/update", upload.array("images", 5), productsController.updateProductHandler); // tested
 
 // Route for getting products by category
 router.get("/category/:category", productsController.getProductsByCategoryHandler); // tested

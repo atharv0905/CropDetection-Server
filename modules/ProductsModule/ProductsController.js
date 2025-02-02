@@ -10,12 +10,17 @@ const productsService = require("./ProductsService");
 
 // Function to add a new product
 const addProductHandler = async (req, res) => {
-    const { name, desc, price, category } = req.body;
+    const { name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product } = req.body;
     const id = req.id;
-    const image = id + ".png";
+    
+    // Extract multiple image filenames
+    const images = req.files ? req.files.map(file => file.filename) : [];
 
     try {
-        const result = await productsService.addProduct(id, name, desc, price, category, image);
+        const result = await productsService.addProduct(
+            id, name, brand_name, title, desc, category, cost_price, selling_price,
+            about_company, about_product, images
+        );
         res.json(result);
     } catch (err) {
         res.json({ success: false, message: err.message });
@@ -24,11 +29,16 @@ const addProductHandler = async (req, res) => {
 
 // Function to update details of a product
 const updateProductHandler = async (req, res) => {
-    const { id, name, desc, price, category } = req.body;
-    const image = id + ".png";
+    const { id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product } = req.body;
+    req.id = id;
+    // Extract multiple image filenames
+    const images = req.files ? req.files.map(file => file.filename) : [];
 
     try {
-        const result = await productsService.updateProduct(id, name, desc, price, category, image);
+        const result = await productsService.updateProduct(
+            id, name, brand_name, title, desc, category, cost_price, selling_price,
+            about_company, about_product, images
+        );
         res.json(result);
     } catch (err) {
         res.json({ success: false, message: err.message });

@@ -6,12 +6,10 @@
     Last Modified: 29-01-2025
 */
 
-const db = require("../../configuration/db");
 const redis = require("redis");
-const { promisify } = require("util");
 const stringSimilarity = require('string-similarity');
-const levenshtein = require('fast-levenshtein');
 const utilityService = require("../UtilityModule/UtilityService");
+const { v4: uuidv4 } = require("uuid");
 const { console } = require("inspector");
 dotenv = require("dotenv");
 
@@ -20,40 +18,95 @@ const redisClient = redis.createClient();
 redisClient.connect(); // For Redis v4+
 
 // Add a product to the database
-const addProduct = async (id, name, desc, price, category, image) => {
+const addProduct = async (id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
-        const query = "INSERT INTO product (id, name, description, category, price, image) VALUES (?, ?, ?, ?, ?, ?)"; // SQL query to insert a new product
+        const query = `INSERT INTO product 
+            (id, name, brand_name, title, description, category, cost_price, selling_price, 
+            about_company_line1, about_company_line2, about_company_line3, 
+            about_product_line1, about_product_line2, about_product_line3, about_product_line4) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        // Execute the query
-        utilityService.sendQuery(query, [id, name, desc, category, price, image]);
+        const aboutCompany = about_company || [];
+        const aboutProduct = about_product || [];
+
+        // Execute the query to insert product details
+        await utilityService.sendQuery(query, [
+            id, name, brand_name, title, desc, category, cost_price, selling_price,
+            aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
+            aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || ''
+        ]);
+
+        // Insert images if provided
+        if (images && images.length > 0) {
+            const imageQuery = "INSERT INTO product_image (id, product_id, image) VALUES (?, ?, ?)";
+            for (const image of images) {
+                const imageId = uuidv4();
+                await utilityService.sendQuery(imageQuery, [imageId, id, image]);
+            }
+        }
 
         const { PRODUCT_CATEGORY_CACHE_KEY, NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
-        clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
-        clearCache(NEW_ARRIVALS_CACHE_KEY); // Clear Redis cache for new arrivals
+        clearCache(PRODUCT_CATEGORY_CACHE_KEY);
+        clearCache(NEW_ARRIVALS_CACHE_KEY);
 
-        // Return a success message if the product is added successfully
         return { success: true, message: "Product added successfully" };
     } catch (err) {
-        // Return an error message if an error occurs
         return { success: false, message: err.message };
     }
-}
+};
 
 // Update product details in the database
-const updateProduct = async (id, name, desc, price, category, image) => {
+const fs = require("fs");
+const path = require("path");
+
+const updateProduct = async (id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
-        const query = "UPDATE product SET name = ?, category = ?, description = ?, price = ?, image = ? WHERE id = ?"; // SQL query to update product details
+        const query = `UPDATE product SET 
+            name = ?, brand_name = ?, title = ?, description = ?, category = ?, 
+            cost_price = ?, selling_price = ?, 
+            about_company_line1 = ?, about_company_line2 = ?, about_company_line3 = ?, 
+            about_product_line1 = ?, about_product_line2 = ?, about_product_line3 = ?, about_product_line4 = ? 
+            WHERE id = ?`; 
+        
+        const aboutCompany = about_company || [];
+        const aboutProduct = about_product || [];
 
-        // Execute the query
-        utilityService.sendQuery(query, [name, category, desc, price, image, id]);
+        // Execute the query to update product details
+        const res = await utilityService.sendQuery(query, [
+            name, brand_name, title, desc, category, cost_price, selling_price,
+            aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
+            aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '',
+            id
+        ]);
 
+        // Retrieve existing images from DB
+        const existingImages = await utilityService.sendQuery("SELECT image FROM product_image WHERE product_id = ?", [id]);
+        
+        // Delete existing images from storage
+        existingImages.forEach(({ image }) => {
+            const imagePath = path.join("product_images", image);
+            if (fs.existsSync(imagePath)) {
+                fs.unlinkSync(imagePath);
+            }
+        });
+        
+        // Delete existing images from DB
+        await utilityService.sendQuery("DELETE FROM product_image WHERE product_id = ?", [id]);
+        
+        // Insert new images if provided
+        if (images && images.length > 0) {
+            const imageQuery = "INSERT INTO product_image (id, product_id, image) VALUES (?, ?, ?)";
+            for (const image of images) {
+                const imageId = uuidv4(); 
+                await utilityService.sendQuery(imageQuery, [imageId, id, image]);
+            }
+        }
+        
         const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
-        clearCache(PRODUCT_CATEGORY_CACHE_KEY); // Clear Redis cache for product categories
+        clearCache(PRODUCT_CATEGORY_CACHE_KEY);
 
-        // Return a success message if the product is updated successfully
         return { success: true, message: "Product updated successfully" };
     } catch (err) {
-        // Return an error message if an error occurs
         return { success: false, message: err.message };
     }
 };
