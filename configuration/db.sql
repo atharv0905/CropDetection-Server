@@ -65,6 +65,31 @@ CREATE TABLE seller_verification (
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- consultant tables
+CREATE TABLE consultant (
+    id VARCHAR(50) PRIMARY KEY,
+    first_name VARCHAR(20) NOT NULL,
+    last_name VARCHAR(20) NOT NULL,
+    phone NUMERIC(12, 0) UNIQUE, 
+    email VARCHAR(30) NOT NULL UNIQUE,
+    expertise VARCHAR(50) NOT NULL CHECK(expertise IN ('Agronomy', 'Horticulture', 'Entomology & Pest Management', 'Dairy', 'Sociocultural ')),
+    experience NUMERIC(2, 0) NOT NULL,
+    starting_charges NUMERIC(6, 2) NOT NULL,
+    profile VARCHAR(100) NOT NULL,
+    password VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE consultant_verification (
+    id VARCHAR(50) PRIMARY KEY,
+    phone NUMERIC(12, 0) UNIQUE,
+    phoneVerified BOOLEAN DEFAULT FALSE,
+    phoneOTP NUMERIC(6, 0),
+    email VARCHAR(30) UNIQUE,
+    emailVerified BOOLEAN DEFAULT FALSE,
+    emailOTP NUMERIC(6, 0),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- product tables 
 CREATE TABLE product (
     id VARCHAR(50) PRIMARY KEY,
@@ -272,6 +297,58 @@ END $$
 DELIMITER ;
 
 DELIMITER $$
+
+CREATE PROCEDURE UpsertConsultantVerificationByEmail(
+    IN p_id VARCHAR(50),
+    IN p_email VARCHAR(30),
+    IN p_emailOTP NUMERIC(6, 0)
+)
+BEGIN
+    DECLARE email_count INT;
+
+    -- Check if the email already exists in seller_verification
+    SELECT COUNT(*) INTO email_count FROM consultant_verification WHERE email = p_email;
+
+    IF email_count = 0 THEN
+        -- Insert if the email does not exist
+        INSERT INTO consultant_verification (id, email, emailOTP, createdAt)
+        VALUES (p_id, p_email, p_emailOTP, CURRENT_TIMESTAMP);
+    ELSE
+        -- Update if the email exists
+        UPDATE consultant_verification 
+        SET emailOTP = p_emailOTP, createdAt = CURRENT_TIMESTAMP
+        WHERE email = p_email;
+    END IF;
+END $$
+
+DELIMITER $$
+
+CREATE PROCEDURE UpsertConsultantVerificationByPhone(
+    IN p_id VARCHAR(50),
+    IN p_phone NUMERIC(12, 0),
+    IN p_phoneOTP NUMERIC(6, 0)
+)
+BEGIN
+    DECLARE phone_count INT;
+
+    -- Check if the phone number already exists in seller_verification
+    SELECT COUNT(*) INTO phone_count FROM consultant_verification WHERE id = p_id;
+
+    IF phone_count = 0 THEN
+        -- Insert if the phone number does not exist
+        INSERT INTO consultant_verification (id, phone, phoneOTP, createdAt)
+        VALUES (p_id, p_phone, p_phoneOTP, CURRENT_TIMESTAMP);
+    ELSE
+        -- Update if the phone number exists
+        UPDATE consultant_verification 
+        SET phone = p_phone, phoneOTP = p_phoneOTP, createdAt = CURRENT_TIMESTAMP
+        WHERE id = p_id;
+    END IF;
+END $$
+
+DELIMITER ;
+
+DELIMITER $$
 CREATE PROCEDURE InsertSeller(
     IN p_id VARCHAR(50),
     IN p_first_name VARCHAR(20),
@@ -300,6 +377,45 @@ BEGIN
     COMMIT;
 END $$
 DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE InsertConsultant(
+    IN p_id VARCHAR(50),
+    IN p_first_name VARCHAR(20),
+    IN p_last_name VARCHAR(20),
+    IN p_expertise VARCHAR(50),
+    IN p_experience NUMERIC(2, 0),
+    IN p_starting_charges NUMERIC(6, 2),
+    IN p_phone NUMERIC(12, 0),
+    IN p_email VARCHAR(30),
+    IN p_password VARCHAR(100),
+    IN p_profile VARCHAR(100)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- Rollback the transaction in case of an exception
+        ROLLBACK;
+    END;
+
+    -- Start the transaction
+    START TRANSACTION;
+
+    -- Insert the consultant into the consultant table
+    INSERT INTO consultant (id, first_name, last_name, expertise, experience, starting_charges, phone, email, profile, password)
+    VALUES (p_id, p_first_name, p_last_name, p_expertise, p_experience, p_starting_charges, p_phone, p_email, p_profile, p_password);
+
+    -- Delete the corresponding row from the consultant_verification table
+    DELETE FROM consultant_verification WHERE email = p_email;
+
+    -- Commit the transaction if everything is fine
+    COMMIT;
+END $$
+
+DELIMITER ;
+
+
 
 
 

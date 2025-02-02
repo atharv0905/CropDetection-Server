@@ -14,6 +14,7 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 product_images/
 template_images/
 promotion_images/
+consultant_images/
 
 # Runtime data
 pids
