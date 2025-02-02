@@ -289,6 +289,19 @@ const getConsultantAppointmentDetails = async (consultantId) => {
     }
 }
 
+// Function to get booked time slots for a consultant
+const getBookedTimeSlots = async (consultantId, date) => {
+    try {
+        const getBookedTimeSlotsQuery = "SELECT start_time, end_time FROM appointment WHERE consultant_id = ? AND date = ?";
+        const result = await utilityService.sendQuery(getBookedTimeSlotsQuery, [consultantId, date], "Failed to get booked time slots");
+
+        return result;
+    } catch (err) {
+        console.error("Error getting booked time slots:", err);
+        throw new Error("Failed to get booked time slots");
+    }
+}
+
 // Exporting the server functions
 module.exports = {
     sendEmailOTP,
@@ -302,5 +315,6 @@ module.exports = {
     bookAppointment,
     changeAppointmentStatus,
     getAppointmentDetails,
-    getConsultantAppointmentDetails
+    getConsultantAppointmentDetails,
+    getBookedTimeSlots
 }

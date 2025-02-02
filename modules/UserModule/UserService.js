@@ -37,7 +37,7 @@ const sendOTP = async(phone) => {
 
         await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone number");
 
-        // await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         return { success: true, message: "OTP sent successfully" };
     }catch(err){

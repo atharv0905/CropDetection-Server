@@ -65,9 +65,11 @@ router.post('/book-appointment', consultantController.verifyAccessToken, consult
 
 router.post('/change-status', consultantController.verifyAccessToken, consultantController.handleChangeAppointmentStatus); // tested
 
-router.get('/get-appointments', consultantController.verifyAccessToken, consultantController.handleFetchAppointments); // tested
+router.post('/get-appointments', consultantController.verifyAccessToken, consultantController.handleFetchAppointments); // tested
 
-router.get('/get-consultant-appointments', consultantController.verifyAccessToken, consultantController.handleFetchConsultantAppointments); // tested
+router.post('/get-consultant-appointments', consultantController.verifyAccessToken, consultantController.handleFetchConsultantAppointments); // tested
+
+router.post('/get-booked-slots', consultantController.verifyAccessToken, consultantController.handleFetchBookedTimeSlots); // tested
 
 // Exporting the router object
 module.exports = router;

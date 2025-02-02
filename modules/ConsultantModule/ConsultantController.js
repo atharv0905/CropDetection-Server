@@ -291,9 +291,10 @@ const handleFetchAppointments = async (req, res) => {
     }
 };
 
+// Function to handle fetching appointment details for consultant
 const handleFetchConsultantAppointments = async (req, res) => {
     // Extracting the required data from the request body
-    const token = req.headers['authorization'].replace('Bearer ', '');
+    const token = req.headers['authorization']?.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     const userId = decoded.id;
     try {
@@ -313,6 +314,30 @@ const handleFetchConsultantAppointments = async (req, res) => {
         return res.status(500).json({ error: error.message || "Failed to fetch appointments" });
     }
 };
+
+// Function to handle fetching booked time slots for a consultant
+const handleFetchBookedTimeSlots = async (req, res) => {
+    // Extracting the required data from the request body
+    const { consultantId, date } = req.body;
+    try {
+        // Calling the server function to fetch time slots
+        const result = await consultantService.getBookedTimeSlots(consultantId, date);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        console.log(result);
+        // Sending the response to the client
+        return res.status(200).json({ success: true, timeSlots: result });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to fetch time slots" });
+    }
+};
+
 // Exporting the controller functions
 module.exports = {
     handleSendEmailOtp,
@@ -327,5 +352,6 @@ module.exports = {
     handleBookAppointment,
     handleChangeAppointmentStatus,
     handleFetchAppointments,
-    handleFetchConsultantAppointments
+    handleFetchConsultantAppointments,
+    handleFetchBookedTimeSlots
 }
