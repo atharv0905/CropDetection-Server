@@ -68,12 +68,28 @@ CREATE TABLE seller_verification (
 -- product tables 
 CREATE TABLE product (
     id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    brand_name VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
     description VARCHAR(500) NOT NULL,
     category VARCHAR(20) NOT NULL CHECK(category IN ('Fertilizer', 'Pesticide', 'Seeds')),
-    price NUMERIC(6, 2) NOT NULL,
-    image VARCHAR(50) NOT NULL,
+    cost_price NUMERIC(6, 2) NOT NULL,
+    selling_price NUMERIC(6, 2) NOT NULL,
+    about_company_line1 VARCHAR(100) NOT NULL,
+    about_company_line2 VARCHAR(100),
+    about_company_line3 VARCHAR(100),
+    about_product_line1 VARCHAR(100) NOT NULL,
+    about_product_line2 VARCHAR(100),
+    about_product_line3 VARCHAR(100),
+    about_product_line4 VARCHAR(100),
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE product_image (
+    id VARCHAR(50) PRIMARY KEY,
+    product_id VARCHAR(50) NOT NULL,
+    image VARCHAR(100) NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
 );
 
 -- cart tables 
@@ -102,18 +118,19 @@ CREATE VIEW cart_summary AS
 SELECT 
     u.id AS user_id,
     c.id AS cart_id,
-    ci.id AS cart_item_id,
     p.id AS product_id,
     p.name,
-    p.description,
-    p.price AS rate,
+    p.title,
+    p.selling_price AS rate,
     ci.quantity,
-    (ci.quantity * p.price) AS total_price,
-    p.image
+    (ci.quantity * p.selling_price) AS total_price,
+    GROUP_CONCAT(pi.image) AS product_images -- Combines multiple images into a single string
 FROM cart_item ci
 JOIN cart c ON ci.cart_id = c.id
 JOIN user u ON c.user_id = u.id
-JOIN product p ON ci.product_id = p.id;
+JOIN product p ON ci.product_id = p.id
+LEFT JOIN product_image pi ON p.id = pi.product_id
+GROUP BY ci.id, u.id, c.id, p.id, p.name, p.title, p.selling_price, ci.quantity;
 
 
 -- events
