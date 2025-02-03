@@ -338,6 +338,26 @@ const handleFetchBookedTimeSlots = async (req, res) => {
     }
 };
 
+// Function to handle fetching consultants list
+const handleFetchConsultants = async (req, res) => {
+    try {
+        // Calling the server function to fetch consultants
+        const result = await consultantService.getConsultantsList();
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error });
+        }
+
+        // Sending the response to the client
+        return res.status(200).json({ success: true, consultants: result.consultants });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to fetch consultants" });
+    }
+};
+
 // Exporting the controller functions
 module.exports = {
     handleSendEmailOtp,
@@ -353,5 +373,6 @@ module.exports = {
     handleChangeAppointmentStatus,
     handleFetchAppointments,
     handleFetchConsultantAppointments,
-    handleFetchBookedTimeSlots
+    handleFetchBookedTimeSlots,
+    handleFetchConsultants
 }

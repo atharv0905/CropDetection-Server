@@ -71,5 +71,7 @@ router.post('/get-consultant-appointments', consultantController.verifyAccessTok
 
 router.post('/get-booked-slots', consultantController.verifyAccessToken, consultantController.handleFetchBookedTimeSlots); // tested
 
+router.get('/get-consultants', consultantController.verifyAccessToken, consultantController.handleFetchConsultants); // tested
+
 // Exporting the router object
 module.exports = router;

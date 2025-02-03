@@ -121,6 +121,7 @@ CREATE TABLE product (
     about_product_line2 VARCHAR(100),
     about_product_line3 VARCHAR(100),
     about_product_line4 VARCHAR(100),
+    quantity NUMERIC(5, 0),
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 );
             

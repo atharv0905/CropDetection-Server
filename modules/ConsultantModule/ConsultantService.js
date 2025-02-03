@@ -302,6 +302,19 @@ const getBookedTimeSlots = async (consultantId, date) => {
     }
 }
 
+// Function to get consultants list
+const getConsultantsList = async () => {
+    try {
+        const getConsultantsQuery = "SELECT * FROM consultant";
+        const result = await utilityService.sendQuery(getConsultantsQuery, [], "Failed to get consultants list");
+
+        return { success: true, message: "Consultants list fetched successfully", consultants: result };
+    } catch (err) {
+        console.error("Error getting consultants list:", err);
+        throw new Error("Failed to get consultants list");
+    }
+}
+
 // Exporting the server functions
 module.exports = {
     sendEmailOTP,
@@ -316,5 +329,6 @@ module.exports = {
     changeAppointmentStatus,
     getAppointmentDetails,
     getConsultantAppointmentDetails,
-    getBookedTimeSlots
+    getBookedTimeSlots,
+    getConsultantsList
 }
