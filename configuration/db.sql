@@ -8,7 +8,6 @@ CREATE TABLE user (
     first_name VARCHAR(20) NOT NULL,
     last_name VARCHAR(20) NOT NULL,
     phone NUMERIC(12, 0) UNIQUE, 
-    -- email VARCHAR(30) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL
 );
 
@@ -106,6 +105,7 @@ CREATE TABLE appointment (
 -- product tables 
 CREATE TABLE product (
     id VARCHAR(50) PRIMARY KEY,
+    seller_id VARCHAR(50),
     name VARCHAR(50) NOT NULL,
     brand_name VARCHAR(50) NOT NULL,
     title VARCHAR(200) NOT NULL,
@@ -122,7 +122,8 @@ CREATE TABLE product (
     about_product_line3 VARCHAR(100),
     about_product_line4 VARCHAR(100),
     quantity NUMERIC(5, 0),
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (seller_id) REFERENCES seller(id) ON DELETE CASCADE
 );
             
 CREATE TABLE product_image (

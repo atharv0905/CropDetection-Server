@@ -12,12 +12,13 @@ const productsService = require("./ProductsService");
 const addProductHandler = async (req, res) => {
     const { name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product } = req.body;
     const id = req.id;
+    const token = req.headers['authorization'].replace('Bearer ', '');
     
     // Extract multiple image filenames
     const images = req.files ? req.files.map(file => file.filename) : [];
 
     try {
-        const result = await productsService.addProduct(
+        const result = await productsService.addProduct(token,
             id, name, brand_name, title, desc, category, cost_price, selling_price,
             about_company, about_product, images
         );
@@ -31,11 +32,12 @@ const addProductHandler = async (req, res) => {
 const updateProductHandler = async (req, res) => {
     const { id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product } = req.body;
     req.id = id;
+    const token = req.headers['authorization'].replace('Bearer ', '');
     // Extract multiple image filenames
     const images = req.files ? req.files.map(file => file.filename) : [];
 
     try {
-        const result = await productsService.updateProduct(
+        const result = await productsService.updateProduct(token,
             id, name, brand_name, title, desc, category, cost_price, selling_price,
             about_company, about_product, images
         );

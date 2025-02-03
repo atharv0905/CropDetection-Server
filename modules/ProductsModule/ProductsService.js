@@ -11,28 +11,31 @@ const stringSimilarity = require('string-similarity');
 const utilityService = require("../UtilityModule/UtilityService");
 const { v4: uuidv4 } = require("uuid");
 dotenv = require("dotenv");
+const jwt = require("jsonwebtoken");
 
 // Initialize Redis client
 const redisClient = redis.createClient();
 redisClient.connect(); // For Redis v4+
 
 // Add a product to the database
-const addProduct = async (id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
+const addProduct = async (token, id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const seller_id = decoded.id;
         const query = `INSERT INTO product 
-            (id, name, brand_name, title, description, category, cost_price, selling_price, image,
+            (id, seller_id, name, brand_name, title, description, category, cost_price, selling_price, image,
             about_company_line1, about_company_line2, about_company_line3, 
-            about_product_line1, about_product_line2, about_product_line3, about_product_line4) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            about_product_line1, about_product_line2, about_product_line3, about_product_line4, quantity) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
         const aboutCompany = about_company || [];
         const aboutProduct = about_product || [];
 
         // Execute the query to insert product details
         await utilityService.sendQuery(query, [
-            id, name, brand_name, title, desc, category, cost_price, selling_price, images[0], 
+            id, seller_id, name, brand_name, title, desc, category, cost_price, selling_price, images[0], 
             aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
-            aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || ''
+            aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '', 0
         ], "Inserting product failed");
 
         // Insert images if provided
@@ -58,14 +61,16 @@ const addProduct = async (id, name, brand_name, title, desc, category, cost_pric
 const fs = require("fs");
 const path = require("path");
 
-const updateProduct = async (id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
+const updateProduct = async (token, id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        const seller_id = decoded.id;
         const query = `UPDATE product SET 
             name = ?, brand_name = ?, title = ?, description = ?, category = ?, 
             cost_price = ?, selling_price = ?, image = ?,
             about_company_line1 = ?, about_company_line2 = ?, about_company_line3 = ?, 
             about_product_line1 = ?, about_product_line2 = ?, about_product_line3 = ?, about_product_line4 = ? 
-            WHERE id = ?`; 
+            WHERE id = ? AND seller_id = ?`; 
         
         const aboutCompany = about_company || [];
         const aboutProduct = about_product || [];
@@ -75,7 +80,7 @@ const updateProduct = async (id, name, brand_name, title, desc, category, cost_p
             name, brand_name, title, desc, category, cost_price, selling_price, images[0],
             aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
             aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '',
-            id
+            id, seller_id
         ]);
 
         // Retrieve existing images from DB
