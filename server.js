@@ -1,6 +1,6 @@
 /**
  * File: server.js
- * Author: Atharv Mirgal
+ * Author: Atharv Mirgal, Yash Balotiya
  * Description: This is the main express server
  * Created on: 27-1-2025
  * Last Modified: 03-02-2025
@@ -79,6 +79,12 @@ appEvents.on("dbReady", () => {
 
     const cartRoutes = require("./modules/CartModule/CartRoutes");
     app.use("/cart", cartRoutes);
+
+    const profileRoutes = require("./modules/ProfileModule/ProfileRoutes");
+    app.use("/profile", profileRoutes);
+
+    const checkoutRoutes = require("./modules/CheckoutModule/CheckoutRoutes");
+    app.use("/checkout", checkoutRoutes);
     
     const consultantRoutes = require("./modules/ConsultantModule/ConsultantRoutes");
     app.use("/consultant", consultantRoutes);

@@ -153,6 +153,34 @@ CREATE TABLE pending_cart_deletion (
     cart_id VARCHAR(50) PRIMARY KEY
 );
 
+-- order tables
+CREATE TABLE order_history (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    user_address VARCHAR(50) NOT NULL,
+    total_amount NUMERIC(6, 2) NOT NULL,
+    transaction_id VARCHAR(50) NOT NULL,
+    payment_id VARCHAR(50) NOT NULL,
+    payment_method VARCHAR(20) NOT NULL CHECK(payment_method IN ('Online', 'Offline')),
+    payment_status VARCHAR(20) NOT NULL CHECK(payment_status IN ('Pending', 'Success', 'Failed')),
+    order_status VARCHAR(20) NOT NULL CHECK(order_status IN ('Confirmed', 'Shipped', 'Delivered', 'Cancelled')) DEFAULT 'Confirmed',
+    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    shipping_date DATETIME,
+    delivery_date DATETIME,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);
+
+CREATE TABLE orders (
+    id VARCHAR(50) PRIMARY KEY,
+    order_history_id VARCHAR(50) NOT NULL,
+    product_id VARCHAR(50) NOT NULL,
+    quantity NUMERIC(3, 0) NOT NULL,
+    rate NUMERIC(6, 2) NOT NULL,
+    total_price NUMERIC(6, 2) NOT NULL,
+    FOREIGN KEY (order_history_id) REFERENCES order_history(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES product(id) ON DELETE CASCADE
+);
+
 
 -- views
 CREATE VIEW cart_summary AS
@@ -257,6 +285,45 @@ BEGIN
     END IF;
 END $$
 
+DELIMITER ;
+
+-- Procedure to remove entry from user verification table and insert it into user table
+DELIMITER $$
+CREATE PROCEDURE InsertUser(
+    IN p_id VARCHAR(50),
+    IN p_first_name VARCHAR(20),
+    IN p_last_name VARCHAR(20),
+    IN p_phone NUMERIC(12, 0),
+    IN p_password VARCHAR(100),
+    IN task VARCHAR(10)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
+    
+    START TRANSACTION;
+    
+    IF task = 'insert' THEN
+        -- Insert into user table
+        INSERT INTO user (id, first_name, last_name, phone, password)
+        VALUES (p_id, p_first_name, p_last_name, p_phone, p_password);
+
+    ELSEIF task = 'update' THEN
+        -- Update user phone number
+        UPDATE user
+        SET phone = p_phone
+        WHERE id = p_id;
+
+    END IF;
+    
+    -- Delete from seller_verification table
+    -- DELETE FROM user_verification WHERE id = p_id;
+    DELETE FROM user_verification WHERE phone = p_phone;
+    
+    COMMIT;
+END $$
 DELIMITER ;
 
 DELIMITER $$
@@ -432,12 +499,53 @@ DELIMITER ;
 
 
 
+-- Procedure to insert records in orders and history table and to remove cart items
 
+DELIMITER $$
 
+CREATE PROCEDURE PlaceOrder(
+    IN b_order_id VARCHAR(50),
+    IN b_history_id VARCHAR(50),
+    IN b_user_id VARCHAR(50),
+    IN b_user_address VARCHAR(50),
+    IN b_total_amount NUMERIC(6, 2),
+    IN b_transaction_id VARCHAR(50),
+    IN b_payment_id VARCHAR(50),
+    IN b_payment_method VARCHAR(20),
+    IN b_payment_status VARCHAR(20)
+)
+BEGIN
+    -- Declare exception handler for rollback in case of errors
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+    END;
 
+    -- Start the transaction
+    START TRANSACTION;
 
+    -- Insert into order_history table
+    INSERT INTO order_history (id, user_id, user_address, total_amount, transaction_id, payment_id, payment_method, payment_status)
+    VALUES (b_history_id, b_user_id, b_user_address, b_total_amount, b_transaction_id, b_payment_id, b_payment_method, b_payment_status);
 
+    -- Insert into orders table using data from cart_summary
+    INSERT INTO orders (id, order_history_id, product_id, quantity, rate, total_price)
+	SELECT 
+		b_order_id, 
+		b_history_id, 
+		cs.product_id, 
+        cs.quantity, 
+        cs.rate, 
+        (cs.quantity * cs.rate) AS total_price
+    FROM cart_summary AS cs
+    WHERE cs.user_id = b_user_id;
 
+    -- Delete items from the cart only after the order is placed
+    DELETE FROM cart_item 
+    WHERE cart_id = (SELECT id FROM cart WHERE user_id = b_user_id);
 
+    -- Commit the transaction if all steps are successful
+    COMMIT;
+END $$
 
-
+DELIMITER ;

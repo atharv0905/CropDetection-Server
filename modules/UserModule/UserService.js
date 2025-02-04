@@ -3,7 +3,7 @@
  * Author: Yash Balotiya, Atharv Mirgal
  * Description: This file is used to handle the server-side logic of the user module.
  * Created on: 27/01/2025
- * Last Modified: 29/01/2025
+ * Last Modified: 02/02/2025
 */
 
 // Importing the required modules
@@ -22,36 +22,43 @@ const generateOTP = () => {
 };
 
 // Function to send OTP
-const sendOTP = async(phone) => {
-    try{
+const sendOTP = async (phone) => {
+    try {
+        // Query to check if phone number is already registered
         const checkPhoneQuery = "SELECT * FROM user WHERE phone = ?";
-        const phoneNumber = '+91' + phone;
         const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
-        if(result.length > 0){
+
+        if (result.length > 0) {
             throw new Error("Phone number already registered");
         }
 
+        // Query to insert phone number and OTP
         const otp = generateOTP();
-        const insertPhoneQuery = "CALL UpsertUserVerification(?, ?, ?);";
         const id = uuidv4();
-
+        
+        const insertPhoneQuery = "CALL UpsertUserVerification(?, ?, ?);";
         await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone number");
 
-        await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        // Send OTP via SMS
+        const phoneNumber = '+91' + phone;
+        // await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         return { success: true, message: "OTP sent successfully" };
-    }catch(err){
+    } catch (err) {
+        // Error handling
         console.error("Error sending OTP:", err);
         throw new Error("Failed to send OTP");
     }
 }
 
 // Function to verify OTP
-const verifyOTP = async(phone, otp) => {
-    try{
+const verifyOTP = async (phone, otp) => {
+    try {
+        // Query to check if OTP is valid
         const checkOTPQuery = "SELECT * FROM user_verification WHERE phone = ? AND phoneOTP = ?";
         const result = await utilityService.sendQuery(checkOTPQuery, [phone, otp], "Failed to check OTP");
-        if(result.length === 0){
+
+        if (result.length === 0) {
             throw new Error("Invalid OTP");
         }
 
@@ -60,86 +67,109 @@ const verifyOTP = async(phone, otp) => {
         const otpTime = new Date(result[0].createdAt);
         const timeDiff = Math.abs(currentTime - otpTime);
 
-        if(timeDiff > 15 * 60 * 1000){
+        if (timeDiff > 15 * 60 * 1000) {
             throw new Error("OTP expired");
         }
-        
+
+        // Query to verify OTP
         const verifyOTPQuery = "UPDATE user_verification SET phoneVerified = 1 WHERE phone = ?";
         await utilityService.sendQuery(verifyOTPQuery, [phone], "Failed to verify OTP");
 
         return { success: true, message: "OTP verified successfully" };
-    }catch(err){
+    } catch (err) {
+        // Error handling
         console.error("Error verifying OTP:", err);
         throw new Error("Failed to verify OTP");
     }
 };
 
 // Function to create new user
-const createNewUser = async(firstName, lastName, phone, password) => {
-    try{
+const createNewUser = async (firstName, lastName, phone, password) => {
+    try {
+        // Query to check if phone number is already registered
         const checkPhoneQuery = "SELECT * FROM user WHERE phone = ?";
-        const phoneNumber = '+91' + phone;
         const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
-        if(result.length > 0){
+        if (result.length > 0) {
             throw new Error("Phone number already registered");
         }
 
-        const insertUserQuery = "INSERT INTO user (id, first_name, last_name, phone, password) VALUES (?, ?, ?, ?, ?)";
-        const id = uuidv4();
+        // Query to check if phone number is verified
+        const checkVerificationQuery = "SELECT * FROM user_verification WHERE phone = ? AND phoneVerified = 1";
+        const verificationResult = await utilityService.sendQuery(checkVerificationQuery, [phone], "Failed to check verification");
+
+        if (verificationResult.length === 0) {
+            throw new Error("Phone number not verified");
+        }
+
+        // Query to insert user details
+        const id = verificationResult[0].id;
         password = await bycrypt.hash(password, 12);
 
-        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, phone, password], "Failed to insert user");
+        const insertUserQuery = "CALL InsertUser(?, ?, ?, ?, ?, ?);";
+        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, phone, password, "insert"], "Failed to create new user");
+
+        // const id = uuidv4();
+        // const insertUserQuery = "INSERT INTO user (id, first_name, last_name, phone, password) VALUES (?, ?, ?, ?, ?)";
+        // await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, phone, password], "Failed to insert user");
 
         return { success: true, message: "User created successfully" };
-    }catch(err){
+    } catch (err) {
+        // Error handling
         console.error("Error creating new user:", err);
         throw new Error("Failed to create new user");
     }
 }
 
 // Function to login user
-const login = async(phone, password) => {
-    try{
+const login = async (phone, password) => {
+    try {
+        // Query to check if phone number is registered
         const checkPhoneQuery = "SELECT * FROM user WHERE phone = ?";
         const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
-        if(result.length === 0){
+
+        if (result.length === 0) {
             throw new Error("Phone number not registered");
         }
 
+        // Query to fetch user details
         const user = result[0];
         const match = await bycrypt.compare(password, user.password);
-        if(!match){
+
+        if (!match) {
             throw new Error("Invalid password");
         }
 
+        // Generate access token and refresh token
         const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-
         const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
         return { success: true, message: "User logged in successfully", accessToken, refreshToken };
-    }catch(err){
+    } catch (err) {
+        // Error handling
         console.error("Error logging in user:", err);
         throw new Error("Failed to login user");
     }
 };
 
 // Function to refresh access token
-const refreshAccessToken = async(refreshToken) => {
-    try{
-
+const refreshAccessToken = async (refreshToken) => {
+    try {
+        // Verify the refresh token
         const decoded = await new Promise((resolve, reject) => {
             jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-                if(err){
+                if (err) {
                     reject(err);
                 }
                 resolve(decoded);
             });
         });
 
+        // Generate a new access token
         const accessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 
         return { success: true, message: "Access token refreshed successfully", accessToken };
-    }catch(err){
+    } catch (err) {
+        // Error handling
         console.error("Error refreshing access token:", err);
         throw new Error("Failed to refresh access token");
     }
