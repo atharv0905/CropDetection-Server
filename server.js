@@ -3,7 +3,7 @@
  * Author: Atharv Mirgal, Yash Balotiya
  * Description: This is the main express server
  * Created on: 27-1-2025
- * Last Modified: 02-02-2025
+ * Last Modified: 03-02-2025
  */
 
 const express = require("express");
@@ -82,6 +82,9 @@ appEvents.on("dbReady", () => {
 
     const profileRoutes = require("./modules/ProfileModule/ProfileRoutes");
     app.use("/profile", profileRoutes);
+
+    const checkoutRoutes = require("./modules/CheckoutModule/CheckoutRoutes");
+    app.use("/checkout", checkoutRoutes);
     
     app.use("/templates", express.static(path.join(__dirname, "template_images"))); // Serve template images
     app.use("/prodImg", express.static(path.join(__dirname, "product_images"))); // Serve product images
