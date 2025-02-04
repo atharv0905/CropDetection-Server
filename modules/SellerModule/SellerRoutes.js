@@ -32,5 +32,9 @@ router.get('/protected', sellerController.verifyAccessToken, (req, res) => { // 
 
 router.post('/refresh-token', sellerController.handleRefreshAccessToken); // tested
 
+router.get("/get-sales-details", sellerController.verifyAccessToken, sellerController.fetchOrderSummaryHandler); // tested
+
+router.get("/get-products", sellerController.verifyAccessToken, sellerController.fetchProductsHandler); // tested
+
 // Exporting the router object
 module.exports = router;

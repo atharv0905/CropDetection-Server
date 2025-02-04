@@ -224,6 +224,27 @@ const refreshAccessToken = async(refreshToken) => {
     }
 };
 
+// Function to fetch details from user_order_summary view 
+const fetchOrderSummary = async (seller_id) => {
+    try {
+        const query = "SELECT * FROM user_order_summary WHERE seller_id = ?;";
+        const orderSummary = await utilityService.sendQuery(query, [seller_id]);
+        return { success: true, orderSummary };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
+
+const fetchProducts = async (seller_id) => {
+    try {
+        const query = "SELECT * FROM product WHERE seller_id = ?;";
+        const products = await utilityService.sendQuery(query, [seller_id]);
+        return { success: true, products };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+}
+
 // Exporting the server functions
 module.exports = {
     sendEmailOTP,
@@ -232,5 +253,7 @@ module.exports = {
     verifyOTP,
     createNewUser,
     login,
-    refreshAccessToken
+    refreshAccessToken,
+    fetchOrderSummary,
+    fetchProducts
 }

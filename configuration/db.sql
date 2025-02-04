@@ -1,3 +1,4 @@
+DROP DATABASE IF EXISTS CROPDETECTION;
 CREATE DATABASE CROPDETECTION;
 USE CROPDETECTION;
 
@@ -201,6 +202,42 @@ JOIN product p ON ci.product_id = p.id
 LEFT JOIN product_image pi ON p.id = pi.product_id
 GROUP BY ci.id, u.id, c.id, p.id, p.name, p.title, p.selling_price, ci.quantity;
 
+CREATE VIEW user_order_summary AS
+SELECT
+    CONCAT(u.first_name, ' ', u.last_name) AS name,
+    u.id AS user_id,
+    oh.id AS order_history_id,
+    oh.user_address,
+    oh.total_amount,
+    oh.transaction_id,
+    oh.payment_id,
+    oh.payment_method,
+    oh.payment_status,
+    oh.order_status,
+    oh.order_date,
+    oh.shipping_date,
+    oh.delivery_date,
+    p.seller_id,
+    JSON_ARRAYAGG(
+        JSON_OBJECT(
+            'product_id', o.product_id,
+            'product_name', p.name,
+            'product_image', p.image,
+            'quantity', o.quantity,
+            'rate', o.rate,
+            'total_price', o.total_price
+        )
+    ) AS orders
+FROM
+    `user` u
+JOIN
+    order_history oh ON u.id = oh.user_id
+JOIN
+    orders o ON oh.id = o.order_history_id
+JOIN
+    product p ON o.product_id = p.id
+GROUP BY
+    u.id, oh.id, p.seller_id;
 
 -- events
 DELIMITER $$
@@ -549,3 +586,5 @@ BEGIN
 END $$
 
 DELIMITER ;
+
+

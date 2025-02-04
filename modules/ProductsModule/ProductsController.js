@@ -7,6 +7,7 @@
 */
 
 const productsService = require("./ProductsService");
+const jwt = require('jsonwebtoken');
 
 // Function to add a new product
 const addProductHandler = async (req, res) => {
@@ -115,6 +116,21 @@ const suggestedProductsHandler = async (req, res) => {
     }
 };
 
+// Function to update product quantity
+const updateProductQuantityHandler = async (req, res) => {
+    const { id, quantity } = req.body;
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const seller_id = decoded.id;
+
+    try {
+        const result = await productsService.updateProductQuantity(id, seller_id, quantity);
+        res.json(result);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 module.exports = {
     addProductHandler,
     updateProductHandler,
@@ -123,5 +139,6 @@ module.exports = {
     fetchProductCategoriesHandler,
     getRecentProductsHandler,
     searchProductsHandler,
-    suggestedProductsHandler
+    suggestedProductsHandler,
+    updateProductQuantityHandler
 };
