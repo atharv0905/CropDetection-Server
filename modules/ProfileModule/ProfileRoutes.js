@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the ProfileModule
     Created: 02-02-2025
-    Last Modified: 03-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing required modules
@@ -32,4 +32,5 @@ router.put("/update-user-password", profileController.updateUserPasswordHandler)
 // Route for updating user phone
 router.put("/update-user-phone", profileController.updateUserPhoneHandler); // tested
 
+// Exporting the router
 module.exports = router;

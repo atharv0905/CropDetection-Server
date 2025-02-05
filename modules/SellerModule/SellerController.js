@@ -1,9 +1,9 @@
 /*
     File: modules/SellerModule/SellerController.js
-    Author: Atharv Mirgal
+    Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the controllers for the Seller Module
     Created: 31-01-2025
-    Last Modified: 31-01-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing the required modules
@@ -25,11 +25,16 @@ const handleSendEmailOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        if (result.success) {
+            return res.status(200).json({ success: true, message: "OTP sent successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to send OTP" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to add email and to send OTP!!" });
+        console.error("Error sending email OTP:", error);
+        return res.status(500).json({ error: error.message || "Failed to add email and to send OTP!!", success: false, message: "Failed to send OTP" });
     }
 };
 
@@ -48,11 +53,16 @@ const handleVerifyEmailOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        if (result.success) {
+            return res.status(200).json({ success: true, message: "OTP verified successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to verify OTP" });
+        console.error("Error verifying email OTP:", error);
+        return res.status(500).json({ error: error.message || "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
     }
 };
 
@@ -71,11 +81,16 @@ const handleSendOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        if (result.success) {
+            return res.status(200).json({ success: true, message: "OTP sent successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to send OTP", success: false, message: "Failed to send OTP" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to add phone number and to send OTP!!" });
+        console.error("Error sending OTP:", error);
+        return res.status(500).json({ error: error.message || "Failed to add phone number and to send OTP!!", success: false, message: "Failed to send OTP" });
     }
 };
 
@@ -94,11 +109,16 @@ const handleVerifyOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        if (result.success) {
+            return res.status(200).json({ success: true, message: "OTP verified successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to verify OTP" });
+        console.error("Error verifying OTP:", error);
+        return res.status(500).json({ error: error.message || "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
     }
 };
 
@@ -117,11 +137,15 @@ const handleCreateNewUser = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(201).json({ success: true });aa
+        if (result.success) {
+            return res.status(200).json({ success: true, message: "User created successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to create user", success: false, message: "Failed to create user" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to create user" });
+        return res.status(500).json({ error: error.message || "Failed to create user", success: false, message: "Failed to create user" });
     }
 };
 
@@ -140,34 +164,44 @@ const handleLogin = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, accessToken: result.accessToken, refreshToken: result.refreshToken });
+        if (result.success) {
+            return res.status(200).json({ success: true, accessToken: result.accessToken, refreshToken: result.refreshToken, message: "User logged in successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to login user", success: false, message: "Failed to login user" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to login user" });
+        console.error("Error logging in user:", error);
+        return res.status(500).json({ error: error.message || "Failed to login user", success: false, message: "Failed to login user" });
     }
 };
 
 // Middleware to verify the access token
 const verifyAccessToken = async (req, res, next) => {
+    // Extracting the access token from the request headers
     const token = req.headers['authorization'].replace('Bearer ', '');
 
-    if(!token){
+    // Checking if the access token is present
+    if (!token) {
         return res.status(401).json({ error: "Access token not found" });
     }
 
-    try{
+    try {
+        // Verifying the access token
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-            if(err){
+            if (err) {
                 throw new Error("Invalid access token");
             }
             return decoded;
         });
         req.userId = decoded.id;
         next();
-    }catch(err){
-        return res.status(401).json({ error: "Invalid access token" });
-    }   
+    } catch (err) {
+        // Sending the error response to the client
+        console.error("Error verifying access token:", err);
+        return res.status(401).json({ error: "Invalid access token", success: false, message: "Invalid access token" });
+    }
 };
 
 // Function to handle the request to refresh access token
@@ -185,11 +219,16 @@ const handleRefreshAccessToken = async (req, res) => {
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, accessToken: result.accessToken });
+        if (result.success) {
+            return res.status(200).json({ success: true, accessToken: result.accessToken, message: "Access token refreshed successfully" });
+        } else {
+            return res.status(500).json({ error: "Failed to refresh access token", success: false, message: "Failed to refresh access token" });
+        }
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to refresh access token" });
+        console.error("Error refreshing access token:", error);
+        return res.status(500).json({ error: error.message || "Failed to refresh access token", success: false, message: "Failed to refresh access token" });
     }
 };
 

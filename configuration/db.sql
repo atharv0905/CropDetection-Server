@@ -5,9 +5,9 @@ USE CROPDETECTION;
 -- user tables
 CREATE TABLE user (
 	id VARCHAR(50) PRIMARY KEY,
-    first_name VARCHAR(20) NOT NULL,
-    last_name VARCHAR(20) NOT NULL,
-    phone NUMERIC(12, 0) UNIQUE, 
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    phone NUMERIC(10, 0) UNIQUE NOT NULL, 
     password VARCHAR(100) NOT NULL
 );
 
@@ -16,10 +16,10 @@ CREATE TABLE user_address (
     user_id VARCHAR(50) NOT NULL,
     line_one VARCHAR(50) NOT NULL,
     line_two VARCHAR(50) NOT NULL,
-    street VARCHAR(20) NOT NULL,
-    landmark VARCHAR(20) NOT NULL,
-    city VARCHAR(20) NOT NULL,
-    state VARCHAR(20) NOT NULL,
+    street VARCHAR(50) NOT NULL,
+    landmark VARCHAR(50) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    state VARCHAR(50) NOT NULL,
     country VARCHAR(20) NOT NULL,
     zip_code NUMERIC(6, 0) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES user(id)
@@ -27,10 +27,10 @@ CREATE TABLE user_address (
 
 CREATE TABLE user_verification (
     id VARCHAR(50) PRIMARY KEY,
-    phone NUMERIC(12, 0) UNIQUE,
+    phone NUMERIC(10, 0) UNIQUE NOT NULL,
     phoneVerified BOOLEAN DEFAULT FALSE,
     phoneOTP NUMERIC(6, 0),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE user_search_history (
@@ -44,34 +44,34 @@ CREATE TABLE user_search_history (
 -- seller tables
 CREATE TABLE seller (
 	id VARCHAR(50) PRIMARY KEY,
-    first_name VARCHAR(20) NOT NULL,
-    last_name VARCHAR(20) NOT NULL,
-    business_name VARCHAR(50) NOT NULL,
-    phone NUMERIC(12, 0) UNIQUE, 
-    email VARCHAR(30) NOT NULL UNIQUE,
-    gst VARCHAR(20) NOT NULL UNIQUE,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    business_name VARCHAR(100) NOT NULL,
+    phone NUMERIC(10, 0) UNIQUE NOT NULL, 
+    email VARCHAR(100) NOT NULL UNIQUE,
+    gst VARCHAR(15) NOT NULL UNIQUE,
     password VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE seller_verification (
     id VARCHAR(50) PRIMARY KEY,
-    phone NUMERIC(12, 0) UNIQUE,
+    phone NUMERIC(10, 0) UNIQUE,
     phoneVerified BOOLEAN DEFAULT FALSE,
     phoneOTP NUMERIC(6, 0),
-    email VARCHAR(30) UNIQUE,
+    email VARCHAR(50) UNIQUE,
     emailVerified BOOLEAN DEFAULT FALSE,
     emailOTP NUMERIC(6, 0),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- consultant tables
 CREATE TABLE consultant (
     id VARCHAR(50) PRIMARY KEY,
-    first_name VARCHAR(20) NOT NULL,
-    last_name VARCHAR(20) NOT NULL,
-    phone NUMERIC(12, 0) UNIQUE, 
-    email VARCHAR(30) NOT NULL UNIQUE,
-    expertise VARCHAR(50) NOT NULL CHECK(expertise IN ('Agronomy', 'Horticulture', 'Entomology & Pest Management', 'Dairy', 'Sociocultural ')),
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    phone NUMERIC(10, 0) UNIQUE, 
+    email VARCHAR(50) NOT NULL UNIQUE,
+    expertise VARCHAR(50) NOT NULL,
     experience NUMERIC(2, 0) NOT NULL,
     starting_charges NUMERIC(6, 2) NOT NULL,
     profile VARCHAR(100) NOT NULL,
@@ -80,24 +80,24 @@ CREATE TABLE consultant (
 
 CREATE TABLE consultant_verification (
     id VARCHAR(50) PRIMARY KEY,
-    phone NUMERIC(12, 0) UNIQUE,
+    phone NUMERIC(10, 0) UNIQUE,
     phoneVerified BOOLEAN DEFAULT FALSE,
     phoneOTP NUMERIC(6, 0),
-    email VARCHAR(30) UNIQUE,
+    email VARCHAR(50) UNIQUE,
     emailVerified BOOLEAN DEFAULT FALSE,
     emailOTP NUMERIC(6, 0),
-    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE appointment (
 	id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
     consultant_id VARCHAR(50) NOT NULL,
-    mode VARCHAR(7) CHECK(mode IN ('ONLINE', 'OFFLINE')),
+    mode VARCHAR(7) CHECK(mode IN ('online', 'offline')),
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    status VARCHAR(10) CHECK(status IN ('PENDING', 'CONFIRMED', 'CANCELLED')) DEFAULT 'PENDING',
+    status VARCHAR(10) CHECK(status IN ('pending', 'confirmed', 'cancelled')) DEFAULT 'pending',
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
     FOREIGN KEY (consultant_id) REFERENCES consultant(id) ON DELETE CASCADE
 );
@@ -110,7 +110,7 @@ CREATE TABLE product (
     brand_name VARCHAR(50) NOT NULL,
     title VARCHAR(200) NOT NULL,
     description VARCHAR(500) NOT NULL,
-    category VARCHAR(20) NOT NULL CHECK(category IN ('Fertilizer', 'Pesticide', 'Seeds')),
+    category VARCHAR(20) NOT NULL,
     cost_price NUMERIC(6, 2) NOT NULL,
     selling_price NUMERIC(6, 2) NOT NULL,
     image VARCHAR(100) NOT NULL,
@@ -157,14 +157,14 @@ CREATE TABLE pending_cart_deletion (
 CREATE TABLE order_history (
     id VARCHAR(50) PRIMARY KEY,
     user_id VARCHAR(50) NOT NULL,
-    user_address VARCHAR(50) NOT NULL,
+    user_address VARCHAR(100) NOT NULL,
     total_amount NUMERIC(6, 2) NOT NULL,
     transaction_id VARCHAR(50) NOT NULL,
     payment_id VARCHAR(50) NOT NULL,
-    payment_method VARCHAR(20) NOT NULL CHECK(payment_method IN ('Online', 'Offline')),
-    payment_status VARCHAR(20) NOT NULL CHECK(payment_status IN ('Pending', 'Success', 'Failed')),
-    order_status VARCHAR(20) NOT NULL CHECK(order_status IN ('Confirmed', 'Shipped', 'Delivered', 'Cancelled')) DEFAULT 'Confirmed',
-    order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    payment_method VARCHAR(10) NOT NULL CHECK(payment_method IN ('online', 'offline')),
+    payment_status VARCHAR(10) NOT NULL CHECK(payment_status IN ('pending', 'success', 'failed')),
+    order_status VARCHAR(10) NOT NULL CHECK(order_status IN ('confirmed', 'shipped', 'delivered', 'cancelled')) DEFAULT 'confirmed',
+    order_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     shipping_date DATETIME,
     delivery_date DATETIME,
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE

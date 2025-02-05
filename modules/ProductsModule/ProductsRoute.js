@@ -1,11 +1,12 @@
 /*
     File: modules/ProductsModule/ProductsRoute.js
-    Author: Atharv Mirgal
+    Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the routes for the Products module.
     Created: 28-01-2025
-    Last Modified: 29-01-2025
+    Last Modified: 05-02-2025
 */
 
+// Importing the required modules
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
@@ -32,6 +33,7 @@ const storage = multer.diskStorage({
     },
 });
 
+// Multer instance
 const upload = multer({ storage: storage });
 
 // Route for adding new product (Supports Multiple Images)
@@ -53,10 +55,14 @@ router.get("/id/:id", productsController.getProductByIDHandler); // tested
 // Route for getting all product categories
 router.get("/categories", productsController.fetchProductCategoriesHandler); // tested
 
+// Route for getting new arrivals
 router.get("/new-arrivals", productsController.getRecentProductsHandler); // tested
 
+// Route for getting products by name search
 router.get("/search/:name", productsController.searchProductsHandler); // tested
 
+// Route for getting suggested products
 router.get("/suggested-products/:id", productsController.suggestedProductsHandler); // tested
- 
+
+// Exporting the router
 module.exports = router;

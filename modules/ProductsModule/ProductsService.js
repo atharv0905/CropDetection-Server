@@ -20,20 +20,24 @@ redisClient.connect(); // For Redis v4+
 // Add a product to the database
 const addProduct = async (token, id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
+        // Decode the token to get the seller ID
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const seller_id = decoded.id;
+
+        // SQL query to insert product details into the database
         const query = `INSERT INTO product 
             (id, seller_id, name, brand_name, title, description, category, cost_price, selling_price, image,
             about_company_line1, about_company_line2, about_company_line3, 
             about_product_line1, about_product_line2, about_product_line3, about_product_line4, quantity) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
+        // Extract about_company and about_product arrays from the request body
         const aboutCompany = about_company || [];
         const aboutProduct = about_product || [];
 
         // Execute the query to insert product details
         await utilityService.sendQuery(query, [
-            id, seller_id, name, brand_name, title, desc, category, cost_price, selling_price, images[0], 
+            id, seller_id, name, brand_name, title, desc, category, cost_price, selling_price, images[0],
             aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
             aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '', 0
         ], "Inserting product failed");
@@ -47,12 +51,16 @@ const addProduct = async (token, id, name, brand_name, title, desc, category, co
             }
         }
 
+        // Clear Redis cache for product categories and new arrivals
         const { PRODUCT_CATEGORY_CACHE_KEY, NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY);
         clearCache(NEW_ARRIVALS_CACHE_KEY);
 
+        // Return a success message
         return { success: true, message: "Product added successfully" };
     } catch (err) {
+        // Return an error message if an error occurs
+        console.error(err);
         return { success: false, message: err.message };
     }
 };
@@ -63,15 +71,19 @@ const path = require("path");
 
 const updateProduct = async (token, id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
+        // Decode the token to get the seller ID
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const seller_id = decoded.id;
+
+        // Query to update product details in the database
         const query = `UPDATE product SET 
             name = ?, brand_name = ?, title = ?, description = ?, category = ?, 
             cost_price = ?, selling_price = ?, image = ?,
             about_company_line1 = ?, about_company_line2 = ?, about_company_line3 = ?, 
             about_product_line1 = ?, about_product_line2 = ?, about_product_line3 = ?, about_product_line4 = ? 
-            WHERE id = ? AND seller_id = ?`; 
-        
+            WHERE id = ? AND seller_id = ?`;
+
+        // Extract about_company and about_product arrays from the request body
         const aboutCompany = about_company || [];
         const aboutProduct = about_product || [];
 
@@ -85,7 +97,7 @@ const updateProduct = async (token, id, name, brand_name, title, desc, category,
 
         // Retrieve existing images from DB
         const existingImages = await utilityService.sendQuery("SELECT image FROM product_image WHERE product_id = ?", [id]);
-        
+
         // Delete existing images from storage
         existingImages.forEach(({ image }) => {
             const imagePath = path.join("product_images", image);
@@ -93,19 +105,19 @@ const updateProduct = async (token, id, name, brand_name, title, desc, category,
                 fs.unlinkSync(imagePath);
             }
         });
-        
+
         // Delete existing images from DB
         await utilityService.sendQuery("DELETE FROM product_image WHERE product_id = ?", [id]);
-        
+
         // Insert new images if provided
         if (images && images.length > 0) {
             const imageQuery = "INSERT INTO product_image (id, product_id, image) VALUES (?, ?, ?)";
             for (const image of images) {
-                const imageId = uuidv4(); 
+                const imageId = uuidv4();
                 await utilityService.sendQuery(imageQuery, [imageId, id, image]);
             }
         }
-        
+
         const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY);
 
@@ -130,7 +142,7 @@ const getProductsByCategory = async (category) => {
         }));
 
         // Return the products with image URL
-        return { success: true, products: productsWithImageURL };
+        return { success: true, products: productsWithImageURL, message: "Products fetched successfully" };
     } catch (err) {
         // Return an error message if an error occurs
         return { success: false, message: err.message };
@@ -157,7 +169,7 @@ const getProductById = async (id) => {
         };
 
         // Return the product with image URL
-        return { success: true, product: productWithImageURL };
+        return { success: true, product: productWithImageURL, message: "Product fetched successfully" };
     } catch (err) {
         // Return an error message if an error occurs
         return { success: false, message: err.message };
@@ -187,7 +199,7 @@ const getProductCategories = async () => {
         // Store in Redis cache
         await redisClient.setEx(PRODUCT_CATEGORY_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
 
-        return { success: true, categories };
+        return { success: true, categories, message: "Categories fetched successfully" };
     } catch (err) {
         return { success: false, message: err.message };
     }
@@ -220,7 +232,7 @@ const getRecentlyAddedProducts = async () => {
         await redisClient.setEx(NEW_ARRIVALS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(productsWithImageURL));
 
         // Return the products with image URL
-        return { success: true, products: productsWithImageURL };
+        return { success: true, products: productsWithImageURL, message: "Recently added products fetched successfully" };
     } catch (err) {
         // Return an error message if an error occurs
         return { success: false, message: err.message };
@@ -241,20 +253,26 @@ const clearCache = async (CACHE_KEY) => {
 const fetchProducts = async () => {
     const CACHE_EXPIRATION = 60 * 5; // 5 minutes
     try {
+        // Check Redis cache first
         const { ALL_PRODUCTS_CACHE_KEY } = require("../../constants/cache_keys");
         const cachedProducts = await redisClient.get(ALL_PRODUCTS_CACHE_KEY);
 
+        // If cache exists, return the cached products
         if (cachedProducts) {
             console.log("Serving from Redis cache");
-            return { success: true, products: JSON.parse(cachedProducts) };
+            return { success: true, products: JSON.parse(cachedProducts), message: "Products fetched successfully" };
         }
 
+        // Fetch products from the database
         const query = "SELECT id, name, title, description, selling_price FROM product";
         const products = await utilityService.sendQuery(query);
 
         await redisClient.setEx(ALL_PRODUCTS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(products));
-        return { success: true, products: products };
+
+        // Return the products
+        return { success: true, products: products, message: "Products fetched successfully" };
     } catch (err) {
+        // Return an error message if an error occurs
         console.error("Error fetching products:", err.message);
         return { success: false, message: err.message };
     }
@@ -299,11 +317,12 @@ const searchProducts = async (searchTerm) => {
                 };
             });
 
-            return { success: true, products: bestMatchProducts };
+            return { success: true, products: bestMatchProducts, message: "Products fetched successfully" };
         } else {
-            return { success: true, products: products[0] };
+            return { success: true, products: products[0], message: "Products fetched successfully" };
         }
     } catch (error) {
+        // Return an error message if an error occurs
         console.error('Error:', error);
         return { success: false, message: error.message };
     }
@@ -311,15 +330,18 @@ const searchProducts = async (searchTerm) => {
 
 // Function to show suggested products based on user search history
 const suggestProducts = async (userId) => {
+    // Import the fetchUserSearchHistory function from the GenericService module
     const { fetchUserSearchHistory } = require('../GenericModule/GenericService');
 
     try {
+        // Fetch the user's search history
         const { success, searchHistory, message } = await fetchUserSearchHistory(userId);
 
         if (!success) {
             return { success: false, message };
         }
 
+        // Fetch products for each search term
         let suggestedProducts = await Promise.all(searchHistory.map(searchTerm => searchProducts(searchTerm)));
 
         // flatten the array of arrays
@@ -335,13 +357,15 @@ const suggestProducts = async (userId) => {
         // pick random 4 products
         suggestedProducts = suggestedProducts.sort(() => Math.random() - 0.5).slice(0, 4);
 
-        return { success: true, suggestedProducts };
+        return { success: true, suggestedProducts, message: "Suggested products fetched successfully" };
     } catch (err) {
+        // Return an error message if an error occurs
         console.error('Error suggesting products:', err);
         return { success: false, message: err.message };
     }
 };
 
+// Export the service methods
 module.exports = {
     addProduct,
     updateProduct,

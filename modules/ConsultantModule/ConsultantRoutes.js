@@ -1,9 +1,9 @@
 /*
     File: modules/ConsultantModule/ConsultantRoutes.js
-    Author: Atharv Mirgal
+    Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the routes for the Consultant Module
     Created: 03-02-2025
-    Last Modified: 03-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing the required modules
@@ -35,42 +35,58 @@ const storage = multer.diskStorage({
     },
 });
 
+// Multer object
 const upload = multer({ storage: storage });
 
 // Defining the routes
+// Route to handle sending email OTP
 router.post('/send-email-otp', consultantController.handleSendEmailOtp); // tested
 
+// Route to handle verifying email OTP
 router.post('/verify-email-otp', consultantController.handleVerifyEmailOtp); // tested
 
+// Route to handle sending OTP
 router.post('/send-otp', consultantController.handleSendOtp); // tested
 
+// Route to handle verifying OTP
 router.post('/verify-otp', consultantController.handleVerifyOtp); //  tested
 
+// Route to handle creating a new user
 router.post('/signup', (req, res, next) => {
     req.id = uuidv4();
     next();
 }, upload.single('profile'), consultantController.handleCreateNewUser); // tested
 
+// Route to handle updating user details
 router.put('/update', upload.single('profile'), consultantController.verifyAccessToken, consultantController.handleUpdateUser); // tested
 
+// Route to handle login of user
 router.post('/login', consultantController.handleLogin); // tested
 
+// Route to verify access token
 router.get('/protected', consultantController.verifyAccessToken, (req, res) => { // tested
     res.status(200).json({ success: true, message: "Access granted" });
-})
+});
 
+// Route to refresh access token
 router.post('/refresh-token', consultantController.handleRefreshAccessToken); // tested
 
+// Route to book an appointment
 router.post('/book-appointment', consultantController.verifyAccessToken, consultantController.handleBookAppointment); // tested
 
+// Route to change appointment status
 router.post('/change-status', consultantController.verifyAccessToken, consultantController.handleChangeAppointmentStatus); // tested
 
+// Route to get appointments
 router.post('/get-appointments', consultantController.verifyAccessToken, consultantController.handleFetchAppointments); // tested
 
+// Route to get consultant appointments
 router.post('/get-consultant-appointments', consultantController.verifyAccessToken, consultantController.handleFetchConsultantAppointments); // tested
 
+// Route to get booked slots
 router.post('/get-booked-slots', consultantController.verifyAccessToken, consultantController.handleFetchBookedTimeSlots); // tested
 
+// Route to get consultants
 router.get('/get-consultants', consultantController.verifyAccessToken, consultantController.handleFetchConsultants); // tested
 
 // Exporting the router object

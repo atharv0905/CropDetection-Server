@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the ProfileModule
     Created: 02-02-2025
-    Last Modified: 02-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing required modules
@@ -41,7 +41,7 @@ const fetchAddresses = async (token) => {
 
         const addresses = await utilityService.sendQuery(fetchQuery, [userID], "Failed to fetch addresses");
 
-        return { success: true, addresses };
+        return { success: true, addresses, message: "Addresses fetched successfully" };
     } catch (err) {
         // Log the error and return a failure response
         throw new Error(err.message);
@@ -159,6 +159,7 @@ const updateUserPhone = async (phone) => {
     }
 };
 
+// Exporting the functions
 module.exports = {
     addAddress,
     fetchAddresses,

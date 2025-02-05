@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the CheckoutModule
     Created: 03-02-2025
-    Last Modified: 03-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing required modules
@@ -58,6 +58,7 @@ const placeOrder = async (token, address, total_amount, transaction_id, payment_
     }
 };
 
+// Exporting the functions
 module.exports = {
     fetchOrderSummary,
     placeOrder

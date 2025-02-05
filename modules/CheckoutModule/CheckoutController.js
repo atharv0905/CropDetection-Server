@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the CheckoutModule
     Created: 03-02-2025
-    Last Modified: 03-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing required modules
@@ -17,10 +17,18 @@ const fetchOrderSummaryHandler = async (req, res) => {
     try {
         // Calling the fetchOrderSummary function from the checkoutService
         const result = await checkoutService.fetchOrderSummary(token);
-        res.json(result);
+
+        // Sending the response
+        if (result.success) {
+            res.status(200).send(result);
+        } else {
+            res.status(500).send(result);
+        }
+        // res.json(result);
     } catch (err) {
         // Sending the error in the response
-        res.json({ success: false, message: err.message });
+        res.status(500).send({ success: false, message: err.message });
+        // res.json({ success: false, message: err.message });
     }
 };
 
@@ -35,13 +43,22 @@ const placeOrderHandler = async (req, res) => {
     try {
         // Calling the completeOrder function from the checkoutService
         const result = await checkoutService.placeOrder(token, address, total_amount, transaction_id, payment_id, payment_method, payment_status);
-        res.json(result);
+
+        // Sending the response
+        if (result.success) {
+            res.status(200).send(result);
+        } else {
+            res.status(500).send(result);
+        }
+        // res.json(result);
     } catch (err) {
         // Sending the error in the response
-        res.json({ success: false, message: err.message });
+        res.status(500).send({ success: false, message: err.message });
+        // res.json({ success: false, message: err.message });
     }
 };
 
+// Exporting the functions
 module.exports = {
     fetchOrderSummaryHandler,
     placeOrderHandler

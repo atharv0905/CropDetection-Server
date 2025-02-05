@@ -1,9 +1,9 @@
 /*
     File: modules/ConsultantModule/ConsultantController.js
-    Author: Atharv Mirgal
+    Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the controllers for the Consultant Module
     Created: 03-02-2025
-    Last Modified: 03-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing the required modules
@@ -22,15 +22,15 @@ const handleSendEmailOtp = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ success: false, error: result.error, message: "Failed to send email OTP" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, message: "OTP sent successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to add email and to send OTP!!" });
+        return res.status(500).json({ success: false, error: error.message || "Failed to add email and to send OTP!!", message: "Failed to send email OTP" });
     }
 };
 
@@ -45,15 +45,15 @@ const handleVerifyEmailOtp = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ success: false, error: result.error, message: "Failed to verify email OTP" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, message: "OTP verified successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to verify OTP" });
+        return res.status(500).json({ success: false, error: error.message || "Failed to verify OTP", message: "Failed to verify email OTP" });
     }
 };
 
@@ -68,15 +68,15 @@ const handleSendOtp = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to send OTP" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, message: "OTP sent successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to add phone number and to send OTP!!" });
+        return res.status(500).json({ error: error.message || "Failed to add phone number and to send OTP!!", success: false, message: "Failed to send OTP" });
     }
 };
 
@@ -91,15 +91,15 @@ const handleVerifyOtp = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to verify OTP" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, message: "OTP verified successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to verify OTP" });
+        return res.status(500).json({ error: error.message || "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
     }
 };
 
@@ -116,15 +116,15 @@ const handleCreateNewUser = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to create user" });
         }
 
         // Sending the response to the client
-        return res.status(201).json({ success: true });aa
+        return res.status(201).json({ success: true });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to create user" });
+        return res.status(500).json({ error: error.message || "Failed to create user", success: false, message: "Failed to create user" });
     }
 };
 
@@ -140,15 +140,15 @@ const handleUpdateUser = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to update user" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, message: "User updated successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to update user" });
+        return res.status(500).json({ error: error.message || "Failed to update user", success: false, message: "Failed to update user" });
     }
 };
 
@@ -163,15 +163,15 @@ const handleLogin = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to login user" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, accessToken: result.accessToken, refreshToken: result.refreshToken });
+        return res.status(200).json({ success: true, accessToken: result.accessToken, refreshToken: result.refreshToken, message: "User logged in successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to login user" });
+        return res.status(500).json({ error: error.message || "Failed to login user", success: false, message: "Failed to login user" });
     }
 };
 
@@ -179,22 +179,22 @@ const handleLogin = async (req, res) => {
 const verifyAccessToken = async (req, res, next) => {
     const token = req.headers['authorization']?.replace('Bearer ', '') || "";
 
-    if(!token){
-        return res.status(401).json({ error: "Access token not found" });
+    if (!token) {
+        return res.status(401).json({ error: "Access token not found", success: false, message: "Access token not found" });
     }
 
-    try{
+    try {
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-            if(err){
+            if (err) {
                 throw new Error("Invalid access token");
             }
             return decoded;
         });
         req.userId = decoded.id;
         next();
-    }catch(err){
-        return res.status(401).json({ error: "Invalid access token" });
-    }   
+    } catch (err) {
+        return res.status(401).json({ error: "Invalid access token", success: false, message: "Invalid access token" });
+    }
 };
 
 // Function to handle the request to refresh access token
@@ -208,15 +208,15 @@ const handleRefreshAccessToken = async (req, res) => {
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to refresh access token" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, accessToken: result.accessToken });
+        return res.status(200).json({ success: true, accessToken: result.accessToken, message: "Access token refreshed successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to refresh access token" });
+        return res.status(500).json({ error: error.message || "Failed to refresh access token", success: false, message: "Failed to refresh access token" });
     }
 };
 
@@ -227,21 +227,22 @@ const handleBookAppointment = async (req, res) => {
     const token = req.headers['authorization'].replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     const userId = decoded.id;
+    
     try {
         // Calling the server function to book appointment
         const result = await consultantService.bookAppointment(consultantId, userId, mode, date, start_time, end_time);
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to book appointment" });
         }
 
         // Sending the response to the client
-        return res.status(201).json({ success: true });
+        return res.status(201).json({ success: true, message: "Appointment booked successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to book appointment" });
+        return res.status(500).json({ error: error.message || "Failed to book appointment", success: false, message: "Failed to book appointment" });
     }
 };
 
@@ -249,21 +250,22 @@ const handleBookAppointment = async (req, res) => {
 const handleChangeAppointmentStatus = async (req, res) => {
     // Extracting the required data from the request body
     const { appointmentId, status } = req.body;
+    
     try {
         // Calling the server function to change appointment status
         const result = await consultantService.changeAppointmentStatus(appointmentId, status);
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to change appointment status" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true });
+        return res.status(200).json({ success: true, message: "Appointment status changed successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to change appointment status" });
+        return res.status(500).json({ error: error.message || "Failed to change appointment status", success: false, message: "Failed to change appointment status" });
     }
 };
 
@@ -273,21 +275,22 @@ const handleFetchAppointments = async (req, res) => {
     const token = req.headers['authorization'].replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     const userId = decoded.id;
+    
     try {
         // Calling the server function to fetch appointments
         const result = await consultantService.getAppointmentDetails(userId);
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to fetch appointments" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, appointments: result.appointments });
+        return res.status(200).json({ success: true, appointments: result.appointments, message: "Appointments fetched successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to fetch appointments" });
+        return res.status(500).json({ error: error.message || "Failed to fetch appointments", success: false, message: "Failed to fetch appointments" });
     }
 };
 
@@ -297,21 +300,22 @@ const handleFetchConsultantAppointments = async (req, res) => {
     const token = req.headers['authorization']?.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     const userId = decoded.id;
+    
     try {
         // Calling the server function to fetch appointments
         const result = await consultantService.getConsultantAppointmentDetails(userId);
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to fetch appointments" });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, appointments: result.appointments });
+        return res.status(200).json({ success: true, appointments: result.appointments, message: "Appointments fetched successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to fetch appointments" });
+        return res.status(500).json({ error: error.message || "Failed to fetch appointments", success: false, message: "Failed to fetch appointments" });
     }
 };
 
@@ -319,42 +323,44 @@ const handleFetchConsultantAppointments = async (req, res) => {
 const handleFetchBookedTimeSlots = async (req, res) => {
     // Extracting the required data from the request body
     const { consultantId, date } = req.body;
+    
     try {
         // Calling the server function to fetch time slots
         const result = await consultantService.getBookedTimeSlots(consultantId, date);
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, success: false, message: "Failed to fetch time slots" });
         }
 
         console.log(result);
         // Sending the response to the client
-        return res.status(200).json({ success: true, timeSlots: result });
+        return res.status(200).json({ success: true, timeSlots: result.timeSlots, message: "Time slots fetched successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to fetch time slots" });
+        return res.status(500).json({ error: error.message || "Failed to fetch time slots", success: false, message: "Failed to fetch time slots" });
     }
 };
 
 // Function to handle fetching consultants list
 const handleFetchConsultants = async (req, res) => {
+    
     try {
         // Calling the server function to fetch consultants
         const result = await consultantService.getConsultantsList();
 
         // Checking if the server function returned an error
         if (result.error) {
-            return res.status(500).json({ error: result.error });
+            return res.status(500).json({ error: result.error, message: "Failed to fetch consultants", success: false });
         }
 
         // Sending the response to the client
-        return res.status(200).json({ success: true, consultants: result.consultants });
+        return res.status(200).json({ success: true, consultants: result.consultants, message: "Consultants fetched successfully" });
 
     } catch (error) {
         // Sending the error response to the client
-        return res.status(500).json({ error: error.message || "Failed to fetch consultants" });
+        return res.status(500).json({ error: error.message || "Failed to fetch consultants", success: false, message: "Failed to fetch consultants" });
     }
 };
 

@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the CheckoutModule
     Created: 03-02-2025
-    Last Modified: 03-02-2025
+    Last Modified: 05-02-2025
 */
 
 // Importing required modules
@@ -17,4 +17,5 @@ router.get("/order-summary", checkoutController.fetchOrderSummaryHandler);
 // Route to place order
 router.post("/place-order", checkoutController.placeOrderHandler);
 
+// Exporting the router
 module.exports = router;
