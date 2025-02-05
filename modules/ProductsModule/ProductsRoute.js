@@ -13,6 +13,7 @@ const multer = require("multer");
 const uuid = require("uuid");
 const fs = require('fs');
 const productsController = require("./ProductsController");
+const sellerController = require("../SellerModule/SellerController");
 
 // Create directory if not exists
 const dir = './product_images';
@@ -40,7 +41,7 @@ const upload = multer({ storage: storage });
 router.post("/add", (req, res, next) => {
     req.id = uuid.v4();
     next();
-}, upload.array("images", 5), productsController.addProductHandler); // Accepts up to 5 images
+}, upload.array("images", 5), sellerController.verifyAccessToken, productsController.addProductHandler); // Accepts up to 5 images
 
 
 // Route for updating details of a product
@@ -63,6 +64,9 @@ router.get("/search/:name", productsController.searchProductsHandler); // tested
 
 // Route for getting suggested products
 router.get("/suggested-products/:id", productsController.suggestedProductsHandler); // tested
+
+// Route for updating product quantity
+router.put("/update-quantity", sellerController.verifyAccessToken, productsController.updateProductQuantityHandler); // tested
 
 // Exporting the router
 module.exports = router;

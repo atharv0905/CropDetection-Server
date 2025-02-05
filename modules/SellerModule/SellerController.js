@@ -232,6 +232,33 @@ const handleRefreshAccessToken = async (req, res) => {
     }
 };
 
+// Function for fetching details from user_order_summary
+const fetchOrderSummaryHandler = async (req, res) => {
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const id = decoded.id;
+
+    try {
+        const result = await sellerService.fetchOrderSummary(id);
+        res.json(result);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
+const fetchProductsHandler = async (req, res) => {
+    const token = req.headers['authorization'].replace('Bearer ', '');
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const id = decoded.id;
+
+    try {
+        const result = await sellerService.fetchProducts(id);
+        res.json(result);
+    } catch (err) {
+        res.json({ success: false, message: err.message });
+    }
+};
+
 // Exporting the controller functions
 module.exports = {
     handleSendEmailOtp,
@@ -241,5 +268,7 @@ module.exports = {
     handleVerifyOtp,
     handleLogin,
     verifyAccessToken,
-    handleRefreshAccessToken
+    handleRefreshAccessToken,
+    fetchOrderSummaryHandler,
+    fetchProductsHandler
 }

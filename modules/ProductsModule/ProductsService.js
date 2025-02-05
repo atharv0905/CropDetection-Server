@@ -365,6 +365,17 @@ const suggestProducts = async (userId) => {
     }
 };
 
+// Function to update product quantity
+const updateProductQuantity = async (productId, seller_id, quantity) => {
+    try {
+        const query = "UPDATE product SET quantity = ? WHERE id = ? AND seller_id = ?";
+        await utilityService.sendQuery(query, [quantity, productId, seller_id]);
+        return { success: true, message: "Product quantity updated successfully" };
+    } catch (err) {
+        return { success: false, message: err.message };
+    }
+};
+
 // Export the service methods
 module.exports = {
     addProduct,
@@ -375,5 +386,6 @@ module.exports = {
     clearCache,
     getRecentlyAddedProducts,
     searchProducts,
-    suggestProducts
+    suggestProducts,
+    updateProductQuantity
 };
