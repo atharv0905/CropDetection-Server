@@ -25,11 +25,7 @@ const handleSendEmailOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, message: "OTP sent successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to send OTP" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -53,11 +49,7 @@ const handleVerifyEmailOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, message: "OTP verified successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -81,11 +73,7 @@ const handleSendOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, message: "OTP sent successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to send OTP", success: false, message: "Failed to send OTP" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -109,11 +97,7 @@ const handleVerifyOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, message: "OTP verified successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to verify OTP", success: false, message: "Failed to verify OTP" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -137,12 +121,7 @@ const handleCreateNewUser = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, message: "User created successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to create user", success: false, message: "Failed to create user" });
-        }
-
+        return res.status(result.status).json({ success: result.success, message: result.message });
     } catch (error) {
         // Sending the error response to the client
         return res.status(500).json({ error: error.message || "Failed to create user", success: false, message: "Failed to create user" });
@@ -164,11 +143,7 @@ const handleLogin = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, accessToken: result.accessToken, refreshToken: result.refreshToken, message: "User logged in successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to login user", success: false, message: "Failed to login user" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message, accessToken: result.accessToken, refreshToken: result.refreshToken });
 
     } catch (error) {
         // Sending the error response to the client
@@ -180,7 +155,7 @@ const handleLogin = async (req, res) => {
 // Middleware to verify the access token
 const verifyAccessToken = async (req, res, next) => {
     // Extracting the access token from the request headers
-    const token = req.headers['authorization'].replace('Bearer ', '');
+    const token = req.headers['authorization']?.replace('Bearer ', '');
 
     // Checking if the access token is present
     if (!token) {
@@ -219,11 +194,7 @@ const handleRefreshAccessToken = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, accessToken: result.accessToken, message: "Access token refreshed successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to refresh access token", success: false, message: "Failed to refresh access token" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message, accessToken: result.accessToken });
 
     } catch (error) {
         // Sending the error response to the client
@@ -240,7 +211,7 @@ const fetchOrderSummaryHandler = async (req, res) => {
 
     try {
         const result = await sellerService.fetchOrderSummary(id);
-        res.json(result);
+        return res.status(result.status).json({ success: result.success, message: result.message, data: result.data });
     } catch (err) {
         res.json({ success: false, message: err.message });
     }
@@ -253,7 +224,7 @@ const fetchProductsHandler = async (req, res) => {
 
     try {
         const result = await sellerService.fetchProducts(id);
-        res.json(result);
+        return res.status(result.status).json({ success: result.success, message: result.message, data: result.data });
     } catch (err) {
         res.json({ success: false, message: err.message });
     }
