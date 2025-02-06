@@ -364,6 +364,29 @@ const handleFetchConsultants = async (req, res) => {
     }
 };
 
+// Function to handle consultant details by id
+const handleConsultantDetails = async (req, res) => {
+    // Extracting the required data from the request body
+    const { consultantId } = req.params;
+    
+    try {
+        // Calling the server function to fetch consultant details
+        const result = await consultantService.getConsultantById(consultantId);
+
+        // Checking if the server function returned an error
+        if (result.error) {
+            return res.status(500).json({ error: result.error, message: "Failed to fetch consultant details", success: false });
+        }
+
+        // Sending the response to the client
+        return res.status(200).json({ success: true, consultant: result.consultant, message: "Consultant details fetched successfully" });
+
+    } catch (error) {
+        // Sending the error response to the client
+        return res.status(500).json({ error: error.message || "Failed to fetch consultant details", success: false, message: "Failed to fetch consultant details" });
+    }
+};
+
 // Exporting the controller functions
 module.exports = {
     handleSendEmailOtp,
@@ -380,5 +403,6 @@ module.exports = {
     handleFetchAppointments,
     handleFetchConsultantAppointments,
     handleFetchBookedTimeSlots,
-    handleFetchConsultants
+    handleFetchConsultants,
+    handleConsultantDetails
 }

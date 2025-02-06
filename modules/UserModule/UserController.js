@@ -24,12 +24,7 @@ const handleSendOtp = async (req, res) => {
             return res.status(500).json({ error: result.error });
         }
 
-        // Sending the response to the client
-        if (result.success) {
-            return res.status(200).json({ success: true, message: "OTP sent successfully" });
-        } else {
-            return res.status(500).json({ error: "Failed to send OTP" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -52,11 +47,7 @@ const handleVerifyOtp = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (!result.success) {
-            return res.status(500).json({ error: "Invalid OTP", success: false, message: "Invalid OTP" });
-        } else {
-            return res.status(200).json({ success: true, message: "OTP verified successfully" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -79,11 +70,7 @@ const handleCreateNewUser = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (!result.success) {
-            return res.status(500).json({ error: "Failed to create user", success: false, message: "Failed to create user" });
-        } else {
-            return res.status(201).json({ success: true, message: "User created successfully" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message });
 
     } catch (error) {
         // Sending the error response to the client
@@ -106,11 +93,7 @@ const handleLogin = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (!result.success) {
-            return res.status(500).json({ error: "Failed to login user", success: false, message: "Failed to login user" });
-        } else {
-            return res.status(200).json({ success: true, accessToken: result.accessToken, refreshToken: result.refreshToken, message: "User logged in successfully" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message, accessToken: result.accessToken, refreshToken: result.refreshToken });
 
     } catch (error) {
         // Sending the error response to the client
@@ -160,11 +143,7 @@ const handleRefreshAccessToken = async (req, res) => {
         }
 
         // Sending the response to the client
-        if (!result.success) {
-            return res.status(500).json({ error: "Failed to refresh access token", success: false, message: "Failed to refresh access token" });
-        } else {
-            return res.status(200).json({ success: true, accessToken: result.accessToken, message: "Access token refreshed successfully" });
-        }
+        return res.status(result.status).json({ success: result.success, message: result.message, accessToken: result.accessToken });
 
     } catch (error) {
         // Sending the error response to the client

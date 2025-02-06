@@ -72,22 +72,25 @@ router.get('/protected', consultantController.verifyAccessToken, (req, res) => {
 router.post('/refresh-token', consultantController.handleRefreshAccessToken); // tested
 
 // Route to book an appointment
-router.post('/book-appointment', consultantController.verifyAccessToken, consultantController.handleBookAppointment); // tested
+router.post('/book-appointment', consultantController.handleBookAppointment); // tested
 
 // Route to change appointment status
 router.post('/change-status', consultantController.verifyAccessToken, consultantController.handleChangeAppointmentStatus); // tested
 
 // Route to get appointments
-router.post('/get-appointments', consultantController.verifyAccessToken, consultantController.handleFetchAppointments); // tested
+router.post('/get-appointments', consultantController.handleFetchAppointments); // tested
 
 // Route to get consultant appointments
-router.post('/get-consultant-appointments', consultantController.verifyAccessToken, consultantController.handleFetchConsultantAppointments); // tested
+router.post('/get-consultant-appointments', consultantController.handleFetchConsultantAppointments); // tested
 
 // Route to get booked slots
-router.post('/get-booked-slots', consultantController.verifyAccessToken, consultantController.handleFetchBookedTimeSlots); // tested
+router.post('/get-booked-slots', consultantController.handleFetchBookedTimeSlots); // tested
 
 // Route to get consultants
-router.get('/get-consultants', consultantController.verifyAccessToken, consultantController.handleFetchConsultants); // tested
+router.get('/get-consultants', consultantController.handleFetchConsultants); // tested
+
+// Route to get consultant details
+router.get('/get-consultant-details/:consultantId', consultantController.handleConsultantDetails); // tested
 
 // Exporting the router object
 module.exports = router;

@@ -121,7 +121,7 @@ const sendOTP = async (email, phone) => {
         await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone number");
 
         // Sending SMS
-        // await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         // Returning success message
         return { success: true, message: "OTP sent successfully" };
@@ -310,6 +310,9 @@ const fetchProducts = async (seller_id) => {
     try {
         const query = "SELECT * FROM product WHERE seller_id = ?;";
         const products = await utilityService.sendQuery(query, [seller_id]);
+        products.forEach(product => {
+            product.image = process.env.BASE_URL +"/prodImg/"+ product.image;
+        });
         return { success: true, products };
     } catch (err) {
         return { success: false, message: err.message };

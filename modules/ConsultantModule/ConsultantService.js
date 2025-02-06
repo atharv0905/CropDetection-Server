@@ -119,7 +119,7 @@ const sendOTP = async (email, phone) => {
 
         await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone number");
 
-        // await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         // Return success message
         return { success: true, message: "OTP sent successfully" };
@@ -378,12 +378,48 @@ const getConsultantsList = async () => {
         const getConsultantsQuery = "SELECT * FROM consultant";
         const result = await utilityService.sendQuery(getConsultantsQuery, [], "Failed to get consultants list");
 
+        const consultants = result.map((consultant) => {
+            return {
+                id: consultant.id,
+                firstName: consultant.first_name,
+                lastName: consultant.last_name,
+                expertise: consultant.expertise,
+                experience: consultant.experience,
+                startingCharges: consultant.starting_charges,
+                profile: process.env.BASE_URL + "/consultantImgs/" + consultant.profile
+            }
+        });
         // Return success message
-        return { success: true, message: "Consultants list fetched successfully", consultants: result };
+        return { success: true, message: "Consultants list fetched successfully", consultants: consultants };
     } catch (err) {
         // Log error and throw error
         console.error("Error getting consultants list:", err);
         throw new Error("Failed to get consultants list");
+    }
+}
+
+// Function to fetch consultant data by id
+const getConsultantById = async (id) => {
+    try {
+        // Query to get consultant data by id
+        const getConsultantQuery = "SELECT * FROM consultant WHERE id = ?";
+        const result = await utilityService.sendQuery(getConsultantQuery, [id], "Failed to get consultant data");
+
+        const data = {
+            id: result[0].id,
+            firstName: result[0].first_name,
+            lastName: result[0].last_name,
+            expertise: result[0].expertise,
+            experience: result[0].experience,
+            startingCharges: result[0].starting_charges,
+            profile: process.env.BASE_URL + "/consultantImgs/" + result[0].profile
+        }
+        // Return success message
+        return { success: true, message: "Consultant data fetched successfully", consultant: data };
+    } catch (err) {
+        // Log error and throw error
+        console.error("Error getting consultant data:", err);
+        throw new Error("Failed to get consultant data");
     }
 }
 
@@ -402,5 +438,6 @@ module.exports = {
     getAppointmentDetails,
     getConsultantAppointmentDetails,
     getBookedTimeSlots,
-    getConsultantsList
+    getConsultantsList,
+    getConsultantById
 }
