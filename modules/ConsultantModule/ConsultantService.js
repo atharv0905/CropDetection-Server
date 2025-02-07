@@ -3,7 +3,7 @@
     Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the services for the Consultant Module
     Created: 03-02-2025
-    Last Modified: 05-02-2025
+    Last Modified: 07-02-2025
 */
 
 // Importing the required modules
@@ -25,13 +25,12 @@ const generateOTP = () => {
 // Function to send email OTP
 const sendEmailOTP = async (email) => {
     try {
-        // Query to check if email is already registered
+        // Check if email is already registered
         const checkEmailQuery = "SELECT * FROM consultant WHERE email = ?";
         const result = await utilityService.sendQuery(checkEmailQuery, [email], "Failed to check email");
 
-        // check if email is already registered
         if (result.length > 0) {
-            throw new Error("Email already registered");
+            return { success: false, status: 409, message: "Email already registered" };
         }
 
         // Generate OTP and insert into database
@@ -39,219 +38,188 @@ const sendEmailOTP = async (email) => {
         const insertEmailQuery = "CALL UpsertConsultantVerificationByEmail(?, ?, ?);";
         const id = uuidv4();
 
-        // Insert email and OTP into database
-        await utilityService.sendQuery(insertEmailQuery, [id, email, otp], "Failed to insert email");
+        await utilityService.sendQuery(insertEmailQuery, [id, email, otp], "Failed to insert email verification data");
 
         // Send email OTP
         await sendEmail(email, "OTP for Email Verification", `Your OTP is ${otp}. Please do not share this with anyone.`);
 
-        // Return success message
-        return { success: true, message: "OTP sent successfully" };
+        return { success: true, status: 200, message: "OTP sent successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error sending email OTP:", err);
-        throw new Error("Failed to send email OTP");
+        return { success: false, status: 500, message: "Failed to send email OTP" };
     }
 };
 
 // Function to verify email OTP
 const verifyEmailOTP = async (email, otp) => {
     try {
-        // query to check if OTP is valid
+        // Check if OTP is valid
         const checkOTPQuery = "SELECT * FROM consultant_verification WHERE email = ? AND emailOTP = ?";
         const result = await utilityService.sendQuery(checkOTPQuery, [email, otp], "Failed to check OTP");
 
-        // check if OTP is valid
         if (result.length === 0) {
-            throw new Error("Invalid OTP");
+            return { success: false, status: 401, message: "Invalid OTP" };
         }
 
-        // check for OTP expiry
+        // Check for OTP expiry
         const currentTime = new Date();
         const otpTime = new Date(result[0].createdAt);
-        const timeDiff = Math.abs(currentTime - otpTime);
-
-        // check if OTP is expired
-        if (timeDiff > 15 * 60 * 1000) {
-            // throw new Error("OTP expired");
-            return { success: false, message: "OTP expired" };
+        if ((currentTime - otpTime) > 15 * 60 * 1000) {
+            return { success: false, status: 401, message: "OTP expired" };
         }
 
-        // update email verification status
+        // Update email verification status
         const verifyOTPQuery = "UPDATE consultant_verification SET emailVerified = 1 WHERE email = ?";
         await utilityService.sendQuery(verifyOTPQuery, [email], "Failed to verify OTP");
 
-        // return success message
-        return { success: true, message: "OTP verified successfully" };
+        return { success: true, status: 200, message: "OTP verified successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error verifying email OTP:", err);
-        throw new Error("Failed to verify email OTP");
+        return { success: false, status: 500, message: "Failed to verify email OTP" };
     }
 };
 
 // Function to send OTP
 const sendOTP = async (email, phone) => {
     try {
-        // Query to check if phone number is already registered
+        const phoneNumber = `+91${phone}`;
+
+        // Check if phone number is already registered
         const checkPhoneQuery = "SELECT * FROM consultant WHERE phone = ?";
-        const phoneNumber = '+91' + phone;
         const result = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
 
-        // check if phone number is already registered
         if (result.length > 0) {
-            throw new Error("Phone number already registered");
+            return { success: false, status: 409, message: "Phone number already registered" };
         }
 
-        // check if email is verified
-        const record = await utilityService.sendQuery("SELECT * FROM consultant_verification WHERE email = ?", [email], "Failed to check email");
+        // Check if email is verified
+        const record = await utilityService.sendQuery("SELECT * FROM consultant_verification WHERE email = ?", [email], "Failed to check email verification");
 
-        if (record.length === 0) {
-            throw new Error("Email not verified");
+        if (record.length === 0 || record[0].emailVerified !== 1) {
+            return { success: false, status: 401, message: "Email not verified" };
         }
-
-        // get consultant id
-        const id = record[0].id;
 
         // Generate OTP and insert into database
+        const id = record[0].id;
         const otp = generateOTP();
         const insertPhoneQuery = "CALL UpsertConsultantVerificationByPhone(?, ?, ?);";
 
-        await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone number");
-
+        await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone verification data");
         await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
-        // Return success message
-        return { success: true, message: "OTP sent successfully" };
+        return { success: true, status: 200, message: "OTP sent successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error sending OTP:", err);
-        throw new Error("Failed to send OTP");
+        return { success: false, status: 500, message: "Failed to send OTP" };
     }
 }
 
 // Function to verify OTP
 const verifyOTP = async (phone, otp) => {
     try {
-        // Query to check if OTP is valid
+        // Check if OTP is valid
         const checkOTPQuery = "SELECT * FROM consultant_verification WHERE phone = ? AND phoneOTP = ?";
         const result = await utilityService.sendQuery(checkOTPQuery, [phone, otp], "Failed to check OTP");
 
-        // check if OTP is valid
         if (result.length === 0) {
-            throw new Error("Invalid OTP");
+            return { success: false, status: 401, message: "Invalid OTP" };
         }
 
-        // check for OTP expiry
+        // Check for OTP expiry
         const currentTime = new Date();
         const otpTime = new Date(result[0].createdAt);
-        const timeDiff = Math.abs(currentTime - otpTime);
-
-        if (timeDiff > 15 * 60 * 1000) {
-            // throw new Error("OTP expired");
-            return { success: false, message: "OTP expired" };
+        if ((currentTime - otpTime) > 15 * 60 * 1000) {
+            return { success: false, status: 401, message: "OTP expired" };
         }
 
-        // update phone verification status
+        // Update phone verification status
         const verifyOTPQuery = "UPDATE consultant_verification SET phoneVerified = 1 WHERE phone = ?";
         await utilityService.sendQuery(verifyOTPQuery, [phone], "Failed to verify OTP");
 
-        // return success message
-        return { success: true, message: "OTP verified successfully" };
+        return { success: true, status: 200, message: "OTP verified successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error verifying OTP:", err);
-        throw new Error("Failed to verify OTP");
+        return { success: false, status: 500, message: "Failed to verify OTP" };
     }
 };
 
 // Function to create new user
 const createNewUser = async (id, firstName, lastName, expertise, experience, startingCharges, email, phone, profile, password) => {
     try {
-        // check if email is already registered
+        // Check if email is already registered
         const checkEmailQuery = "SELECT * FROM consultant WHERE email = ?";
         const result = await utilityService.sendQuery(checkEmailQuery, [email], "Failed to check email");
-        
+
         if (result.length > 0) {
-            throw new Error("Email already registered");
+            return { success: false, status: 409, message: "Email already registered" };
         }
 
-        // check if phone number is already registered
+        // Check if phone number is already registered
         const checkPhoneQuery = "SELECT * FROM consultant WHERE phone = ?";
         const phoneResult = await utilityService.sendQuery(checkPhoneQuery, [phone], "Failed to check phone number");
 
         if (phoneResult.length > 0) {
-            throw new Error("Phone number already registered");
+            return { success: false, status: 409, message: "Phone number already registered" };
         }
 
-        // hash the password
+        // Hash the password
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // insert user details into database
+        // Insert user details into database
         const insertUserQuery = "CALL InsertConsultant(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, expertise, experience, startingCharges, phone, email, hashedPassword, profile], "Failed to insert user data");
 
-        await utilityService.sendQuery(insertUserQuery, [id, firstName, lastName, expertise, experience, startingCharges, phone, email, hashedPassword, profile], "Failed to insert user");
-
-        // return success message
-        return { success: true, message: "Consultant created successfully" };
+        return { success: true, status: 201, message: "Consultant created successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error creating new consultant:", err);
-        throw new Error("Failed to create new consultant");
+        return { success: false, status: 500, message: "Failed to create new consultant" };
     }
 }
 
 // Function to update user details
 const updateUser = async (token, firstName, lastName, expertise, experience, startingCharges, profile) => {
     try {
-        // decode token to get user id
+        // Decode token to get user ID
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const id = decoded.id;
 
-        // update user details in database
+        // Update user details in the database
         const updateUserQuery = "UPDATE consultant SET first_name = ?, last_name = ?, expertise = ?, experience = ?, starting_charges = ?, profile = ? WHERE id = ?";
-
         await utilityService.sendQuery(updateUserQuery, [firstName, lastName, expertise, experience, startingCharges, profile, id], "Failed to update user");
 
-        // return success message
-        return { success: true, message: "Consultant updated successfully" };
+        return { success: true, status: 200, message: "Consultant updated successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error updating consultant:", err);
-        throw new Error("Failed to update consultant");
+        return { success: false, status: 500, message: "Failed to update consultant" };
     }
 }
 
 // Function to login user
 const login = async (email, password) => {
     try {
-        // check if email is registered
-        const checkPhoneQuery = "SELECT * FROM consultant WHERE email = ?";
-        const result = await utilityService.sendQuery(checkPhoneQuery, [email], "Failed to check email");
+        // Check if email is registered
+        const checkUserQuery = "SELECT * FROM consultant WHERE email = ?";
+        const result = await utilityService.sendQuery(checkUserQuery, [email], "Failed to check email");
 
         if (result.length === 0) {
-            throw new Error("Email not registered");
+            return { success: false, status: 404, message: "Email not registered" };
         }
 
-        // check if password is correct
+        // Validate password
         const user = result[0];
         const match = await bcrypt.compare(password, user.password);
-
         if (!match) {
-            throw new Error("Invalid password");
+            return { success: false, status: 401, message: "Invalid password" };
         }
 
-        // generate access token and refresh token
+        // Generate access token & refresh token
         const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-
         const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
-        // return success message
-        return { success: true, message: "User logged in successfully", accessToken, refreshToken };
+        return { success: true, status: 200, message: "User logged in successfully", accessToken, refreshToken };
     } catch (err) {
-        // Log error and throw error
         console.error("Error logging in user:", err);
-        throw new Error("Failed to login user");
+        return { success: false, status: 500, message: "Failed to login user" };
     }
 };
 
@@ -272,53 +240,58 @@ const refreshAccessToken = async (refreshToken) => {
         const accessToken = jwt.sign({ id: decoded.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
 
         // return success message
-        return { success: true, message: "Access token refreshed successfully", accessToken };
+        return { success: true, status: 200, message: "Access token refreshed successfully", accessToken };
     } catch (err) {
-        // Log error and throw error
         console.error("Error refreshing access token:", err);
-        throw new Error("Failed to refresh access token");
+        return { success: false, status: 403, message: "Failed to refresh access token" };
     }
 };
 
 // Book an appointment
 const bookAppointment = async (consultantId, userId, mode, date, start_time, end_time) => {
     try {
-        // Query to check if appointment clashes
-        const checkAppointmentQuery = "SELECT * FROM appointment WHERE consultant_id = ? AND date = ? AND ((start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))";
-
+        // Check for appointment clashes
+        const checkAppointmentQuery = `
+            SELECT * FROM appointment 
+            WHERE consultant_id = ? AND date = ? 
+            AND ((start_time >= ? AND start_time < ?) OR (end_time > ? AND end_time <= ?))
+        `;
         const result = await utilityService.sendQuery(checkAppointmentQuery, [consultantId, date, start_time, end_time, start_time, end_time], "Failed to check appointment");
 
         if (result.length > 0) {
-            throw new Error("Appointment clash");
+            return { success: false, status: 409, message: "Appointment clash, please select a different time slot" };
         }
 
         // Insert appointment into database
         const insertAppointmentQuery = "INSERT INTO appointment (id, consultant_id, user_id, mode, date, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?)";
-
         await utilityService.sendQuery(insertAppointmentQuery, [uuidv4(), consultantId, userId, mode, date, start_time, end_time], "Failed to book appointment");
 
-        // Return success message
-        return { success: true, message: "Appointment booked successfully" };
+        return { success: true, status: 201, message: "Appointment booked successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error booking appointment:", err);
-        throw new Error("Failed to book appointment");
+        return { success: false, status: 500, message: "Failed to book appointment" };
     }
 }
 
 // Change status of appointment
 const changeAppointmentStatus = async (appointmentId, status) => {
     try {
-        // Update appointment status in database
+        // Check if appointment exists
+        const checkAppointmentQuery = "SELECT * FROM appointment WHERE id = ?";
+        const appointment = await utilityService.sendQuery(checkAppointmentQuery, [appointmentId], "Failed to check appointment");
+
+        if (appointment.length === 0) {
+            return { success: false, status: 404, message: "Appointment not found" };
+        }
+
+        // Update appointment status
         const updateAppointmentQuery = "UPDATE appointment SET status = ? WHERE id = ?";
         await utilityService.sendQuery(updateAppointmentQuery, [status, appointmentId], "Failed to update appointment status");
 
-        // Return success message
-        return { success: true, message: "Appointment status updated successfully" };
+        return { success: true, status: 200, message: "Appointment status updated successfully" };
     } catch (err) {
-        // Log error and throw error
         console.error("Error updating appointment status:", err);
-        throw new Error("Failed to update appointment status");
+        return { success: false, status: 500, message: "Failed to update appointment status" };
     }
 }
 
@@ -329,12 +302,14 @@ const getAppointmentDetails = async (userId) => {
         const getAppointmentQuery = "SELECT * FROM appointment WHERE user_id = ?";
         const result = await utilityService.sendQuery(getAppointmentQuery, [userId], "Failed to get appointment details");
 
-        // Return success message
-        return { success: true, message: "Appointment details fetched successfully", appointments: result };
+        if (result.length === 0) {
+            return { success: false, status: 404, message: "No appointments found for this user" };
+        }
+
+        return { success: true, status: 200, message: "Appointment details fetched successfully", appointments: result };
     } catch (err) {
-        // Log error and throw error
         console.error("Error getting appointment details:", err);
-        throw new Error("Failed to get appointment details");
+        return { success: false, status: 500, message: "Failed to get appointment details" };
     }
 }
 
@@ -345,65 +320,70 @@ const getConsultantAppointmentDetails = async (consultantId) => {
         const getAppointmentQuery = "SELECT * FROM appointment WHERE consultant_id = ?";
         const result = await utilityService.sendQuery(getAppointmentQuery, [consultantId], "Failed to get appointment details");
 
-        // Return success message
-        return { success: true, message: "Appointment details fetched successfully", appointments: result };
+        if (result.length === 0) {
+            return { success: false, status: 404, message: "No appointments found for this consultant" };
+        }
+
+        return { success: true, status: 200, message: "Appointment details fetched successfully", appointments: result };
     } catch (err) {
-        // Log error and throw error
         console.error("Error getting appointment details:", err);
-        throw new Error("Failed to get appointment details");
+        return { success: false, status: 500, message: "Failed to get appointment details" };
     }
 }
 
 // Function to get booked time slots for a consultant
 const getBookedTimeSlots = async (consultantId, date) => {
     try {
-        // Query to get booked time slots
         const getBookedTimeSlotsQuery = "SELECT start_time, end_time FROM appointment WHERE consultant_id = ? AND date = ?";
         const result = await utilityService.sendQuery(getBookedTimeSlotsQuery, [consultantId, date], "Failed to get booked time slots");
 
-        // Return success message
-        return { success: true, message: "Booked time slots fetched successfully", timeSlots: result };
-        // return result;
+        if (result.length === 0) {
+            return { success: false, status: 404, message: "No booked time slots for this consultant on the selected date" };
+        }
+
+        return { success: true, status: 200, message: "Booked time slots fetched successfully", timeSlots: result };
     } catch (err) {
-        // Log error and throw error
         console.error("Error getting booked time slots:", err);
-        throw new Error("Failed to get booked time slots");
+        return { success: false, status: 500, message: "Failed to get booked time slots" };
     }
 }
 
 // Function to get consultants list
 const getConsultantsList = async () => {
     try {
-        // Query to get consultants list
         const getConsultantsQuery = "SELECT * FROM consultant";
         const result = await utilityService.sendQuery(getConsultantsQuery, [], "Failed to get consultants list");
 
-        const consultants = result.map((consultant) => {
-            return {
-                id: consultant.id,
-                firstName: consultant.first_name,
-                lastName: consultant.last_name,
-                expertise: consultant.expertise,
-                experience: consultant.experience,
-                startingCharges: consultant.starting_charges,
-                profile: process.env.BASE_URL + "/consultantImgs/" + consultant.profile
-            }
-        });
-        // Return success message
-        return { success: true, message: "Consultants list fetched successfully", consultants: consultants };
+        if (result.length === 0) {
+            return { success: false, status: 404, message: "No consultants found" };
+        }
+
+        const consultants = result.map((consultant) => ({
+            id: consultant.id,
+            firstName: consultant.first_name,
+            lastName: consultant.last_name,
+            expertise: consultant.expertise,
+            experience: consultant.experience,
+            startingCharges: consultant.starting_charges,
+            profile: process.env.BASE_URL + "/consultantImgs/" + consultant.profile
+        }));
+
+        return { success: true, status: 200, message: "Consultants list fetched successfully", consultants };
     } catch (err) {
-        // Log error and throw error
         console.error("Error getting consultants list:", err);
-        throw new Error("Failed to get consultants list");
+        return { success: false, status: 500, message: "Failed to get consultants list" };
     }
 }
 
 // Function to fetch consultant data by id
 const getConsultantById = async (id) => {
     try {
-        // Query to get consultant data by id
         const getConsultantQuery = "SELECT * FROM consultant WHERE id = ?";
         const result = await utilityService.sendQuery(getConsultantQuery, [id], "Failed to get consultant data");
+
+        if (result.length === 0) {
+            return { success: false, status: 404, message: "Consultant not found" };
+        }
 
         const data = {
             id: result[0].id,
@@ -413,13 +393,12 @@ const getConsultantById = async (id) => {
             experience: result[0].experience,
             startingCharges: result[0].starting_charges,
             profile: process.env.BASE_URL + "/consultantImgs/" + result[0].profile
-        }
-        // Return success message
-        return { success: true, message: "Consultant data fetched successfully", consultant: data };
+        };
+
+        return { success: true, status: 200, message: "Consultant data fetched successfully", consultant: data };
     } catch (err) {
-        // Log error and throw error
         console.error("Error getting consultant data:", err);
-        throw new Error("Failed to get consultant data");
+        return { success: false, status: 500, message: "Failed to get consultant data" };
     }
 }
 

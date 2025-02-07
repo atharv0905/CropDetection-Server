@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the ProfileModule
     Created: 02-02-2025
-    Last Modified: 05-02-2025
+    Last Modified: 07-02-2025
 */
 
 // Importing required modules
@@ -13,7 +13,6 @@ const checkoutService = require("./ProfileService");
 const addNewAddressHandler = async (req, res) => {
     // Desctructuring the request body
     const { name, line1, line2, street, landmark, city, state, pincode } = req.body;
-    // const { line1, line2, street, landmark, city, state, pincode } = req.body;
 
     // Extracting the token from the request headers
     const token = req.headers['authorization']?.replace('Bearer ', '') || "";
@@ -23,15 +22,11 @@ const addNewAddressHandler = async (req, res) => {
         const result = await checkoutService.addAddress(token, name, line1, line2, street, landmark, city, state, pincode);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Address added successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to add address" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in addNewAddressHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -45,15 +40,11 @@ const fetchAllAddressHandler = async (req, res) => {
         const result = await checkoutService.fetchAddresses(token);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Addresses fetched successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to fetch addresses" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in fetchAllAddressHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -67,15 +58,10 @@ const updateAddressHandler = async (req, res) => {
         const result = await checkoutService.updateAddress(address_id, line1, line2, street, landmark, city, state, pincode);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Address updated successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to update address" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in updateAddressHandler: ", err);
     }
 };
 
@@ -89,15 +75,11 @@ const deleteAddressHandler = async (req, res) => {
         const result = await checkoutService.deleteAddress(address_id);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Address deleted successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to delete address" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in deleteAddressHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -114,15 +96,11 @@ const updateUserNameHandler = async (req, res) => {
         const result = await checkoutService.updateUserName(token, fname, lname);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Name updated successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to update name" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in updateUserNameHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -139,15 +117,11 @@ const updateUserPasswordHandler = async (req, res) => {
         const result = await checkoutService.updateUserPassword(token, oldPassword, newPassword);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Password updated successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to update password" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in updateUserPasswordHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -162,15 +136,11 @@ const updateUserPhoneHandler = async (req, res) => {
         const result = await checkoutService.updateUserPhone(token, phone);
 
         // Sending the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Phone updated successfully" });
-        } else {
-            return res.status(500).json({ data: result, success: false, message: "Failed to update phone" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Sending the error in the response
-        console.log(err);
-        return res.status(500).json({ success: false, message: err.message });
+        console.error("Error in updateUserPhoneHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 

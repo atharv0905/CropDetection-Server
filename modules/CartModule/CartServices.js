@@ -3,10 +3,9 @@
     Author: Atharv Mirgal
     Desc: This file contains the services for the CartModule
     Created: 01-02-2025
-    Last Modified: 05-02-2025
+    Last Modified: 07-02-2025
 */
 
-// Importing the utility service
 const { sendQuery } = require("../../modules/UtilityModule/UtilityService");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
@@ -15,97 +14,107 @@ require('dotenv').config();
 // Function to add a product to the cart
 const addToCart = async (token, productID, quantity) => {
     try {
-        // Verifying the token
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userID = decoded.id;
 
-        // Fetching the cart ID
+        // Check if the cart exists
         const fetchCartQuery = `SELECT id FROM cart WHERE user_id = ?`;
-        const cartID = await sendQuery(fetchCartQuery, [userID], "Failed to fetch cart");
+        let cart = await sendQuery(fetchCartQuery, [userID], "Error retrieving cart");
 
-        // If cart doesn't exist, create a new cart
-        if (cartID.length === 0) {
+        // If no cart exists, create one
+        let cartID;
+        if (cart.length === 0) {
+            cartID = uuidv4();
             const createCartQuery = `INSERT INTO cart (id, user_id) VALUES (?, ?)`;
-            const id = uuidv4();
-            await sendQuery(createCartQuery, [id, userID], "Failed to create cart");
-        };
+            await sendQuery(createCartQuery, [cartID, userID], "Error creating new cart");
+        } else {
+            cartID = cart[0].id;
+        }
 
-        // Adding the product to the cart
+        // Add product to cart
         const id = uuidv4();
         const addProductQuery = `INSERT INTO cart_item (id, cart_id, product_id, quantity) VALUES (?, ?, ?, ?)`;
-        await sendQuery(addProductQuery, [id, cartID[0].id, productID, quantity], "Failed to add product to cart");
+        await sendQuery(addProductQuery, [id, cartID, productID, quantity], "Error adding product to cart");
 
-        return { success: true, message: "Product added to cart successfully" };
+        return { success: true, status: 201, message: "Product added to cart successfully" };
     } catch (err) {
-        // Handling errors
-        console.error(err);
-        return { success: false, message: "Failed to add product to cart" };
+        console.error("Error in addToCart:", err);
+        return { success: false, status: 500, message: "An error occurred while adding the product to the cart" };
     }
-}
+};
 
 // Function to fetch the cart
 const fetchCart = async (token) => {
     try {
-        // Verifying the token
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userID = decoded.id;
 
-        // Fetching the cart
         const fetchQuery = `SELECT * FROM cart_summary WHERE user_id = ?`;
-        const result = await sendQuery(fetchQuery, [userID], "Failed to fetch cart");
+        const result = await sendQuery(fetchQuery, [userID], "Error retrieving cart details");
 
-        return { success: true, message: "Cart fetched successfully", cart: result };
+        if (result.length === 0) {
+            return { success: false, status: 404, message: "Cart not found for the user" };
+        }
+
+        return { success: true, status: 200, message: "Cart fetched successfully", data: result };
     } catch (err) {
-        // Handling errors
-        console.error(err);
-        return { success: false, message: "Failed to fetch cart" };
+        console.error("Error in fetchCart:", err);
+        return { success: false, status: 500, message: "An error occurred while fetching the cart" };
     }
 };
 
 // Function to update a cart item
 const updateCartItem = async (token, productID, quantity) => {
     try {
-        // Verifying the token
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userID = decoded.id;
 
-        // If quantity is 0, delete the cart item
+        // If quantity is 0 or negative, remove the item
         if (quantity <= 0) {
-            deleteCartItem(token, productID);
+            return await deleteCartItem(token, productID);
         }
 
-        // Updating the cart item
-        const updateQuery = `UPDATE cart_item SET quantity = ? WHERE product_id = ? AND cart_id = (SELECT id FROM cart WHERE user_id = ?)`;
-        await sendQuery(updateQuery, [quantity, productID, userID], "Failed to update cart item");
+        const updateQuery = `
+            UPDATE cart_item 
+            SET quantity = ? 
+            WHERE product_id = ? AND cart_id = (SELECT id FROM cart WHERE user_id = ?)
+        `;
+        const result = await sendQuery(updateQuery, [quantity, productID, userID], "Error updating cart item");
 
-        return { success: true, message: "Cart item updated successfully" };
+        if (result.affectedRows === 0) {
+            return { success: false, status: 404, message: "Product not found in cart" };
+        }
+
+        return { success: true, status: 200, message: "Cart item updated successfully" };
     } catch (err) {
-        // Handling errors
-        console.error(err);
-        return { success: false, message: "Failed to update cart item" };
+        console.error("Error in updateCartItem:", err);
+        return { success: false, status: 500, message: "An error occurred while updating the cart item" };
     }
 };
 
 // Function to delete a cart item
 const deleteCartItem = async (token, productID) => {
     try {
-        // Verifying the token
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userID = decoded.id;
 
-        // Deleting the cart item
-        const deleteQuery = `DELETE FROM cart_item WHERE product_id = ? AND cart_id = (SELECT id FROM cart WHERE user_id = ?)`;
-        await sendQuery(deleteQuery, [productID, userID], "Failed to delete cart item");
+        const deleteQuery = `
+            DELETE FROM cart_item 
+            WHERE product_id = ? AND cart_id = (SELECT id FROM cart WHERE user_id = ?)
+        `;
+        const result = await sendQuery(deleteQuery, [productID, userID], "Error deleting cart item");
 
-        return { success: true, message: "Cart item deleted successfully" };
+        if (result.affectedRows === 0) {
+            return { success: false, status: 404, message: "Product not found in cart" };
+        }
+
+        return { success: true, status: 200, message: "Cart item deleted successfully" };
     } catch (err) {
-        // Handling errors
-        console.error(err);
-        return { success: false, message: "Failed to delete cart item" };
+        console.error("Error in deleteCartItem:", err);
+        return { success: false, status: 500, message: "An error occurred while removing the product from the cart" };
     }
 };
 
-// Exporting the functions
 module.exports = {
     addToCart,
     fetchCart,

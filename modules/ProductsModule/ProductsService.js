@@ -1,73 +1,59 @@
 /*
     File: modules/ProductsModule/ProductsService.js
-    Author: Atharv Mirgal
+    Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the service methods for the Products module.
     Created: 28-01-2025
-    Last Modified: 29-01-2025
+    Last Modified: 07-02-2025
 */
 
-const redis = require("redis");
-const stringSimilarity = require('string-similarity');
-const utilityService = require("../UtilityModule/UtilityService");
-const { v4: uuidv4 } = require("uuid");
-dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+const fs = require("fs");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
+const redisClient = require("../../config/redisClient");
+const utilityService = require("../UtilityModule/UtilityService");
+const { PRODUCT_CATEGORY_CACHE_KEY, NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
 
 // Initialize Redis client
 const redisClient = redis.createClient();
 redisClient.connect(); // For Redis v4+
 
-// Add a product to the database
-const addProduct = async (token, id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
+// Add a product
+const addProduct = async (token, productData) => {
     try {
-        // Decode the token to get the seller ID
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        const seller_id = decoded.id;
-
-        // SQL query to insert product details into the database
+        productData.seller_id = decoded.id;
+        
         const query = `INSERT INTO product 
             (id, seller_id, name, brand_name, title, description, category, cost_price, selling_price, image,
             about_company_line1, about_company_line2, about_company_line3, 
             about_product_line1, about_product_line2, about_product_line3, about_product_line4, quantity) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        
+        const values = [
+            productData.id, productData.seller_id, productData.name, productData.brand_name, productData.title, 
+            productData.description, productData.category, productData.cost_price, productData.selling_price, productData.images[0],
+            productData.about_company[0] || '', productData.about_company[1] || '', productData.about_company[2] || '',
+            productData.about_product[0] || '', productData.about_product[1] || '', productData.about_product[2] || '', productData.about_product[3] || '', 0
+        ];
 
-        // Extract about_company and about_product arrays from the request body
-        const aboutCompany = about_company || [];
-        const aboutProduct = about_product || [];
-
-        // Execute the query to insert product details
-        await utilityService.sendQuery(query, [
-            id, seller_id, name, brand_name, title, desc, category, cost_price, selling_price, images[0],
-            aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
-            aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '', 0
-        ], "Inserting product failed");
-
-        // Insert images if provided
-        if (images && images.length > 0) {
+        await utilityService.sendQuery(query, values, "Failed to insert product");
+        
+        if (productData.images.length > 0) {
             const imageQuery = "INSERT INTO product_image (id, product_id, image) VALUES (?, ?, ?)";
-            for (const image of images) {
-                const imageId = uuidv4();
-                await utilityService.sendQuery(imageQuery, [imageId, id, image], "Inserting product image failed");
+            for (const image of productData.images) {
+                await utilityService.sendQuery(imageQuery, [uuidv4(), productData.id, image], "Failed to insert product image");
             }
         }
 
-        // Clear Redis cache for product categories and new arrivals
-        const { PRODUCT_CATEGORY_CACHE_KEY, NEW_ARRIVALS_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY);
         clearCache(NEW_ARRIVALS_CACHE_KEY);
 
-        // Return a success message
-        return { success: true, message: "Product added successfully" };
+        return { statusCode: 201, success: true, message: "Product added successfully", result: null };
     } catch (err) {
-        // Return an error message if an error occurs
-        console.error(err);
-        return { success: false, message: err.message };
+        return { statusCode: 500, success: false, message: err.message, result: null };
     }
 };
-
-// Update product details in the database
-const fs = require("fs");
-const path = require("path");
 
 const updateProduct = async (token, id, name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product, images) => {
     try {
@@ -93,10 +79,15 @@ const updateProduct = async (token, id, name, brand_name, title, desc, category,
             aboutCompany[0] || '', aboutCompany[1] || '', aboutCompany[2] || '',
             aboutProduct[0] || '', aboutProduct[1] || '', aboutProduct[2] || '', aboutProduct[3] || '',
             id, seller_id
-        ]);
+        ], "Failed to update product");
+
+        const result = await utilityService.sendQuery(query, values, "Failed to update product");
+        if (result.affectedRows === 0) {
+            return { statusCode: 404, success: false, message: "Product not found or unauthorized", result: null };
+        }
 
         // Retrieve existing images from DB
-        const existingImages = await utilityService.sendQuery("SELECT image FROM product_image WHERE product_id = ?", [id]);
+        const existingImages = await utilityService.sendQuery("SELECT image FROM product_image WHERE product_id = ?", [id], "Failed to fetch product images");
 
         // Delete existing images from storage
         existingImages.forEach(({ image }) => {
@@ -107,72 +98,62 @@ const updateProduct = async (token, id, name, brand_name, title, desc, category,
         });
 
         // Delete existing images from DB
-        await utilityService.sendQuery("DELETE FROM product_image WHERE product_id = ?", [id]);
+        await utilityService.sendQuery("DELETE FROM product_image WHERE product_id = ?", [id], "Failed to delete product images");
 
         // Insert new images if provided
         if (images && images.length > 0) {
             const imageQuery = "INSERT INTO product_image (id, product_id, image) VALUES (?, ?, ?)";
             for (const image of images) {
                 const imageId = uuidv4();
-                await utilityService.sendQuery(imageQuery, [imageId, id, image]);
+                await utilityService.sendQuery(imageQuery, [imageId, id, image], "Failed to insert product image");
             }
         }
 
-        const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
         clearCache(PRODUCT_CATEGORY_CACHE_KEY);
 
-        return { success: true, message: "Product updated successfully" };
+        return { statusCode: 200, success: true, message: "Product updated successfully", result: null };
     } catch (err) {
-        return { success: false, message: err.message };
+        return { statusCode: 500, success: false, message: err.message, result: null };
     }
 };
 
 // Fetch products by category and the image URL
 const getProductsByCategory = async (category) => {
     try {
-        const query = "SELECT id, name, title, description, selling_price, image FROM product WHERE category = ?"; // SQL query to fetch products by category
+        const query = "SELECT id, name, title, description, selling_price, image FROM product WHERE category = ?";
+        const products = await utilityService.sendQuery(query, [category], "Failed to fetch products");
 
-        // Execute the query
-        const products = await utilityService.sendQuery(query, [category]);
-
-        // Add the image URL to each product object
-        const productsWithImageURL = products.map((product) => ({
+        const productsWithImageURL = products.map(product => ({
             ...product,
             image: `${process.env.BASE_URL}/prodImg/${product.image}`
         }));
 
-        // Return the products with image URL
-        return { success: true, products: productsWithImageURL, message: "Products fetched successfully" };
+        return { statusCode: 200, success: true, message: "Products fetched successfully", result: productsWithImageURL };
     } catch (err) {
-        // Return an error message if an error occurs
-        return { success: false, message: err.message };
+        return { statusCode: 500, success: false, message: err.message, result: null };
     }
 };
 
 // Fetch product details by ID and the image URL
 const getProductById = async (id) => {
     try {
-        const query = "SELECT * FROM product WHERE id = ?"; // SQL query to fetch product details by ID
-        let product = await utilityService.sendQuery(query, [id]);
+        const query = "SELECT * FROM product WHERE id = ?";
+        const product = await utilityService.sendQuery(query, [id], "Failed to fetch product");
+        if (!product.length) {
+            return { statusCode: 404, success: false, message: "Product not found", result: null };
+        }
+        const imagesQuery = "SELECT image FROM product_image WHERE product_id = ?";
+        const images = await utilityService.sendQuery(imagesQuery, [id], "Failed to fetch product images");
 
-        const imagesQuery = "SELECT image FROM product_image WHERE product_id = ?"; // SQL query to fetch product images by ID
-        const images = await utilityService.sendQuery(imagesQuery, [id]);
-
-        product = product[0];
-
-        // Ensure 'images' is an array before using map
-        const imagesArray = Array.isArray(images) ? images : [];
         const productWithImageURL = {
-            ...product,
-            image: `${process.env.BASE_URL}/prodImg/${product.image}`,
-            images: imagesArray.map((img) => `${process.env.BASE_URL}/prodImg/${img.image}`)
+            ...product[0],
+            image: `${process.env.BASE_URL}/prodImg/${product[0].image}`,
+            images: images.map(img => `${process.env.BASE_URL}/prodImg/${img.image}`)
         };
 
-        // Return the product with image URL
-        return { success: true, product: productWithImageURL, message: "Product fetched successfully" };
+        return { statusCode: 200, success: true, message: "Product fetched successfully", result: productWithImageURL };
     } catch (err) {
-        // Return an error message if an error occurs
-        return { success: false, message: err.message };
+        return { statusCode: 500, success: false, message: err.message, result: null };
     }
 };
 
@@ -180,28 +161,21 @@ const getProductById = async (id) => {
 const getProductCategories = async () => {
     const CACHE_EXPIRATION = 60 * 30; // 30 minutes
     try {
-        // Check Redis cache first
-        const { PRODUCT_CATEGORY_CACHE_KEY } = require("../../constants/cache_keys");
+        const CACHE_EXPIRATION = 60 * 30; // 30 minutes
         const cachedCategories = await redisClient.get(PRODUCT_CATEGORY_CACHE_KEY);
 
         if (cachedCategories) {
-            console.log("Serving from Redis cache");
-            return { success: true, categories: JSON.parse(cachedCategories) };
+            return { statusCode: 200, success: true, message: "Categories fetched successfully (cached)", result: JSON.parse(cachedCategories) };
         }
 
-        // Fetch from database if cache is empty
         const query = "SELECT DISTINCT category FROM product";
+        let categories = await utilityService.sendQuery(query, [], "Failed to fetch categories");
+        categories = categories.map(category => category.category);
 
-        let categories = await utilityService.sendQuery(query);
-
-        // Extract the category names from the result
-        categories = categories.map((category) => category.category);
-        // Store in Redis cache
         await redisClient.setEx(PRODUCT_CATEGORY_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(categories));
-
-        return { success: true, categories, message: "Categories fetched successfully" };
+        return { statusCode: 200, success: true, message: "Categories fetched successfully", result: categories };
     } catch (err) {
-        return { success: false, message: err.message };
+        return { statusCode: 500, success: false, message: err.message, result: null };
     }
 };
 
@@ -214,13 +188,14 @@ const getRecentlyAddedProducts = async () => {
 
         if (cachedProducts) {
             console.log("Serving from Redis cache");
-            return { success: true, products: JSON.parse(cachedProducts) };
+            // return { success: true, products: JSON.parse(cachedProducts) };
+            return { success: true, products: JSON.parse(cachedProducts), message: "Recently added products fetched successfully", status: 200 };
         }
 
         const query = "SELECT id, name, title, description, selling_price, image FROM product WHERE createdAt >= NOW() - INTERVAL 2 DAY"; // SQL query to fetch recently added products
 
         // Execute the query
-        const products = await utilityService.sendQuery(query);
+        const products = await utilityService.sendQuery(query, [], "Failed to fetch recently added products");
 
         // Add the image URL to each product object
         const productsWithImageURL = products.map((product) => ({
@@ -232,10 +207,10 @@ const getRecentlyAddedProducts = async () => {
         await redisClient.setEx(NEW_ARRIVALS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(productsWithImageURL));
 
         // Return the products with image URL
-        return { success: true, products: productsWithImageURL, message: "Recently added products fetched successfully" };
+        return { success: true, products: productsWithImageURL, message: "Recently added products fetched successfully", status: 200 };
     } catch (err) {
         // Return an error message if an error occurs
-        return { success: false, message: err.message };
+        return { success: false, message: err.message, status: 500 };
     }
 };
 
@@ -244,8 +219,11 @@ const clearCache = async (CACHE_KEY) => {
     try {
         await redisClient.del(CACHE_KEY);
         console.log(`Cleared Redis cache for key: ${CACHE_KEY}`);
+
+        return { success: true, message: "Redis cache cleared successfully", status: 200 };
     } catch (err) {
         console.error("Error clearing Redis cache:", err.message);
+        return { success: false, message: err.message, status: 500 };
     }
 };
 
@@ -260,21 +238,21 @@ const fetchProducts = async () => {
         // If cache exists, return the cached products
         if (cachedProducts) {
             console.log("Serving from Redis cache");
-            return { success: true, products: JSON.parse(cachedProducts), message: "Products fetched successfully" };
+            return { success: true, products: JSON.parse(cachedProducts), message: "Products fetched successfully", status: 200 };
         }
 
         // Fetch products from the database
         const query = "SELECT id, name, title, description, selling_price FROM product";
-        const products = await utilityService.sendQuery(query);
+        const products = await utilityService.sendQuery(query, [], "Failed to fetch products");
 
         await redisClient.setEx(ALL_PRODUCTS_CACHE_KEY, CACHE_EXPIRATION, JSON.stringify(products));
 
         // Return the products
-        return { success: true, products: products, message: "Products fetched successfully" };
+        return { success: true, products: products, message: "Products fetched successfully", status: 200 };
     } catch (err) {
         // Return an error message if an error occurs
         console.error("Error fetching products:", err.message);
-        return { success: false, message: err.message };
+        return { success: false, message: err.message, status: 500 };
     }
 };
 
@@ -286,7 +264,7 @@ const searchProducts = async (searchTerm) => {
 
         // Ensure products is an array and contains data
         if (!Array.isArray(products) || products.length === 0) {
-            throw new Error('No products found');
+            return { success: false, message: "No products found", status: 404 };
         }
 
         // Get product names and descriptions arrays
@@ -295,7 +273,7 @@ const searchProducts = async (searchTerm) => {
 
         // Ensure searchTerm is a string
         if (typeof searchTerm !== 'string' || searchTerm.trim() === '') {
-            throw new Error('Search term should be a non-empty string');
+            return { success: false, message: "Search term should be a non-empty string", status: 400 };
         }
 
         // Combine both names and descriptions for better match
@@ -317,14 +295,14 @@ const searchProducts = async (searchTerm) => {
                 };
             });
 
-            return { success: true, products: bestMatchProducts, message: "Products fetched successfully" };
+            return { success: true, products: bestMatchProducts, message: "Products fetched successfully", status: 200 };
         } else {
-            return { success: true, products: products[0], message: "Products fetched successfully" };
+            return { success: true, products: products[0], message: "Products fetched successfully", status: 200 };
         }
     } catch (error) {
         // Return an error message if an error occurs
         console.error('Error:', error);
-        return { success: false, message: error.message };
+        return { success: false, message: error.message, status: 500 };
     }
 };
 
@@ -338,7 +316,7 @@ const suggestProducts = async (userId) => {
         const { success, searchHistory, message } = await fetchUserSearchHistory(userId);
 
         if (!success) {
-            return { success: false, message };
+            return { success: false, message, status: 500 };
         }
 
         // Fetch products for each search term
@@ -357,11 +335,11 @@ const suggestProducts = async (userId) => {
         // pick random 4 products
         suggestedProducts = suggestedProducts.sort(() => Math.random() - 0.5).slice(0, 4);
 
-        return { success: true, suggestedProducts, message: "Suggested products fetched successfully" };
+        return { success: true, suggestedProducts, message: "Suggested products fetched successfully", status: 200 };
     } catch (err) {
         // Return an error message if an error occurs
         console.error('Error suggesting products:', err);
-        return { success: false, message: err.message };
+        return { success: false, message: err.message, status: 500 };
     }
 };
 
@@ -369,10 +347,10 @@ const suggestProducts = async (userId) => {
 const updateProductQuantity = async (productId, seller_id, quantity) => {
     try {
         const query = "UPDATE product SET quantity = ? WHERE id = ? AND seller_id = ?";
-        await utilityService.sendQuery(query, [quantity, productId, seller_id]);
-        return { success: true, message: "Product quantity updated successfully" };
+        await utilityService.sendQuery(query, [quantity, productId, seller_id], "Failed to update product quantity");
+        return { success: true, message: "Product quantity updated successfully", status: 200 };
     } catch (err) {
-        return { success: false, message: err.message };
+        return { success: false, message: err.message, status: 500 };
     }
 };
 

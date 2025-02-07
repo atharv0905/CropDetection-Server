@@ -23,11 +23,7 @@ const fetchTemplatesHandler = async (req, res) => {
     const templates = await genericService.fetchTemplates(req);
 
     // Send the response
-    if (templates.success) {
-        return res.status(200).json({ data: templates, success: true, message: "Templates fetched successfully" });
-    } else {
-        return res.status(500).json({ data: templates, success: false, message: "Failed to fetch templates"} );
-    }
+    return res.status(templates.status).json(templates);
 };
 
 // Handles the deletion of a template
@@ -36,11 +32,7 @@ const deleteTemplateHandler = async (req, res) => {
     const response = await genericService.deleteTemplate(req.params.filename + ".png");
 
     // Send the response
-    if (response.success) {
-        return res.status(200).json({ data: response, success: true, message: "Template deleted successfully" });
-    } else {
-        return res.status(500).json({ data: response, success: false, message: "Failed to delete template" });
-    }
+    return res.status(response.status).json(response);
 };
 
 // Handles the addition of a promotion
@@ -51,18 +43,7 @@ const addPromotionHandler = async (req, res) => {
     }
 
     // Send the response
-    if (req.file.size > 5000000) {
-        return res.status(400).json({ message: "File size too large!", success: false});
-
-    } else if (req.file.mimetype !== "image/png") {
-        return res.status(400).json({ message: "Invalid file type!", success: false});
-
-    } else if (req.file.size === 0) {
-        return res.status(400).json({ message: "Empty file uploaded!", success: false});
-
-    } else if (req.file.size < 5000000 && req.file.mimetype === "image/png") {
-        return res.status(200).json({ success: true, message: "Promotion uploaded successfully", filename: req.file.filename });
-    }
+    return res.status(200).json({ success: true, message: "Promotion uploaded successfully", filename: req.file.filename });
 };
 
 // Handles the fetching of all promotions
@@ -71,11 +52,7 @@ const fetchPromotionsHandler = async (req, res) => {
     const templates = await genericService.fetchPromotions(req);
 
     // Send the response
-    if (templates.success) {
-        return res.status(200).json({ data: templates, success: true, message: "Promotions fetched successfully" });
-    } else {
-        return res.status(500).json({ data: templates, success: false, message: "Failed to fetch promotions"} );
-    }
+    return res.status(templates.status).json(templates);
 };
 
 // Handles the deletion of a promotion
@@ -84,11 +61,7 @@ const deletePromotionHandler = async (req, res) => {
     const response = await genericService.deletePromotion(req.params.filename + ".png");
 
     // Send the response
-    if (response.success) {
-        return res.status(200).json({ data: response, success: true, message: "Promotion deleted successfully" });
-    } else {
-        return res.status(500).json({ data: response, success: false, message: "Failed to delete promotion" });
-    }
+    return res.status(response.status).json(response);
 };
 
 // Handles storing user search history
@@ -100,11 +73,7 @@ const storeSearchHistoryHandler = async (req, res) => {
     const response = await genericService.storeUserSearchHistory(user_id, search_query);
 
     // Sending the response
-    if (response.success) {
-        return res.status(200).json({ data: response, success: true, message: "Search history stored successfully" });
-    } else {
-        return res.status(500).json({ data: response, success: false, message: "Failed to store search history" });
-    }
+    return res.status(response.status).json(response);
 };
 
 // Handle fetching user search history
@@ -116,11 +85,7 @@ const fetchSearchHistoryHandler = async (req, res) => {
     const response = await genericService.fetchUserSearchHistory(user_id);
 
     // Sending the response
-    if (response.success) {
-        return res.status(200).json({ data: response, success: true, message: "Search history fetched successfully" });
-    } else {
-        return res.status(500).json({ data: response, success: false, message: "Failed to fetch search history" });
-    }
+    return res.status(response.status).json(response);
 };
 
 // Exporting the functions

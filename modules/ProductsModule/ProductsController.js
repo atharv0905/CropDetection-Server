@@ -3,7 +3,7 @@
     Author: Atharv Mirgal, Yash Balotiya
     Desc: This file contains the controller methods for the Products module.
     Created: 28-01-2025
-    Last Modified: 05-02-2025
+    Last Modified: 07-02-2025
 */
 
 // Importing the services
@@ -28,15 +28,11 @@ const addProductHandler = async (req, res) => {
         );
 
         // Send the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Product added successfully" });
-        } else {
-            return res.status(500).json({ success: false, message: "Failed to add product" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Handle errors
-        console.error(err);
-        res.json({ success: false, message: err.message });
+        console.error("Error in addProductHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -60,15 +56,11 @@ const updateProductHandler = async (req, res) => {
         );
 
         // Send the response
-        if (result.success) {
-            return res.status(200).json({ data: result, success: true, message: "Product updated successfully" });
-        } else {
-            return res.status(500).json({ success: false, message: "Failed to update product" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Handle errors
-        console.error(err);
-        res.json({ success: false, message: err.message });
+        console.error("Error in updateProductHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -82,15 +74,11 @@ const getProductsByCategoryHandler = async (req, res) => {
         const result = await productsService.getProductsByCategory(category);
 
         // Send the response
-        if (!result.success) {
-            return res.status(404).json({ success: false, message: "No products found" });
-        } else {
-            return res.status(200).json({ data: result.products, success: true, message: "Products fetched successfully" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Handle errors
-        console.error(err);
-        res.json({ success: false, message: err.message });
+        console.error("Error in getProductsByCategoryHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -104,13 +92,10 @@ const getProductByIDHandler = async (req, res) => {
         const result = await productsService.getProductById(id);
 
         // Send the response
-        if (!result.success) {
-            return res.status(404).json({ success: false, message: "Product not found" });
-        } else {
-            return res.status(200).json({ data: result.product, success: true, message: "Product fetched successfully" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
-        res.json({ success: false, message: err.message });
+        console.error("Error in getProductByIDHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -121,15 +106,11 @@ const fetchProductCategoriesHandler = async (req, res) => {
         const result = await productsService.getProductCategories();
 
         // Send the response
-        if (!result.success) {
-            return res.status(404).json({ success: false, message: "No categories found" });
-        } else {
-            return res.status(200).json({ data: result, success: true, message: "Categories fetched successfully" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Handle errors
-        console.error(err);
-        res.json({ success: false, message: err.message });
+        console.error("Error in fetchProductCategoriesHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -140,15 +121,11 @@ const getRecentProductsHandler = async (req, res) => {
         const result = await productsService.getRecentlyAddedProducts();
 
         // Send the response
-        if (!result.success) {
-            return res.status(404).json({ success: false, message: "No products found" });
-        } else {
-            return res.status(200).json({ data: result.products, success: true, message: "Products fetched successfully" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
         // Handle errors
-        console.error(err);
-        res.json({ success: false, message: err.message });
+        console.error("Error in getRecentProductsHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -162,13 +139,11 @@ const searchProductsHandler = async (req, res) => {
         const result = await productsService.searchProducts(name);
 
         // Send the response
-        if (!result.success) {
-            return res.status(404).json({ success: false, message: "No products found" });
-        } else {
-            return res.status(200).json({ data: result.products, success: true, message: "Products fetched successfully" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
-        res.json({ success: false, message: err.message });
+        // Handle errors
+        console.error("Error in searchProductsHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -182,15 +157,10 @@ const suggestedProductsHandler = async (req, res) => {
         const result = await productsService.suggestProducts(id);
 
         // Send the response
-        if (!result.success) {
-            return res.status(404).json({ success: false, message: "No products found" });
-        } else {
-            return res.status(200).json({ data: result, success: true, message: "Products fetched successfully" });
-        }
+        return res.status(result.status).json(result);
     } catch (err) {
-        // Handle errors
-        console.error(err);
-        res.json({ success: false, message: err.message });
+        console.error("Error in suggestedProductsHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 
@@ -203,9 +173,11 @@ const updateProductQuantityHandler = async (req, res) => {
 
     try {
         const result = await productsService.updateProductQuantity(id, seller_id, quantity);
-        res.json(result);
+        
+        return res.status(result.status).json(result);
     } catch (err) {
-        res.json({ success: false, message: err.message });
+        console.error("Error in updateProductQuantityHandler: ", err);
+        return res.status(500).json({ success: false, message: err.message, status: 500 });
     }
 };
 

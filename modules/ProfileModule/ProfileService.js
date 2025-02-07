@@ -3,7 +3,7 @@
     Author: Yash Balotiya
     Desc: This file contains the controllers for the ProfileModule
     Created: 02-02-2025
-    Last Modified: 05-02-2025
+    Last Modified: 07-02-2025
 */
 
 // Importing required modules
@@ -24,10 +24,11 @@ const addAddress = async (token, line1, line2, street, landmark, city, state, pi
 
         await utilityService.sendQuery(addQuery, [address_id, userID, line1, line2, street, landmark, city, state, "India", pincode], "Failed to add address");
 
-        return { success: true, message: "Address added successfully" };
+        return { success: true, message: "Address added successfully", status: 201 };
     } catch (err) {
         // Log the error and return a failure response
-        throw new Error(err.message);
+        console.error("Error in addAddress: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
@@ -41,10 +42,11 @@ const fetchAddresses = async (token) => {
 
         const addresses = await utilityService.sendQuery(fetchQuery, [userID], "Failed to fetch addresses");
 
-        return { success: true, addresses, message: "Addresses fetched successfully" };
+        return { success: true, addresses, message: "Addresses fetched successfully", status: 200 };
     } catch (err) {
         // Log the error and return a failure response
-        throw new Error(err.message);
+        console.error("Error in fetchAddresses: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
@@ -56,10 +58,11 @@ const updateAddress = async (address_id, line1, line2, street, landmark, city, s
 
         await utilityService.sendQuery(updateQuery, [line1, line2, street, landmark, city, state, pincode, address_id], "Failed to update address");
 
-        return { success: true, message: "Address updated successfully" };
+        return { success: true, message: "Address updated successfully", status: 200};
     } catch (err) {
         // Log the error and return a failure response
-        throw new Error(err.message);
+        console.error("Error in updateAddress: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
@@ -71,10 +74,11 @@ const deleteAddress = async (address_id) => {
 
         await utilityService.sendQuery(deleteQuery, [address_id], "Failed to delete address");
 
-        return { success: true, message: "Address deleted successfully" };
+        return { success: true, message: "Address deleted successfully", status: 200 };
     } catch (err) {
         // Log the error and return a failure response
-        throw new Error(err.message);
+        console.error("Error in deleteAddress: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
@@ -88,10 +92,11 @@ const updateUserName = async (token, fname, lname) => {
 
         await utilityService.sendQuery(updateQuery, [fname, lname, userID], "Failed to update user name");
 
-        return { success: true, message: "User name updated successfully" };
+        return { success: true, message: "User name updated successfully", status: 200 };
     } catch (err) {
         // Log the error and return a failure response
-        throw new Error(err.message);
+        console.error("Error in updateUserName: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
@@ -107,13 +112,13 @@ const updateUserPassword = async (token, oldPassword, newPassword) => {
         const user = await utilityService.sendQuery(fetchQuery, [userID], "Failed to fetch user");
 
         if (!user || user.length === 0) {
-            throw new Error("User not found");
+            return { success: false, message: "User not found", status: 400 };
         }
 
         // Compare the old password with the stored password hash
         const isPasswordMatch = await bcrypt.compare(oldPassword, user[0].password);
         if (!isPasswordMatch) {
-            return { success: false, message: "Old password is incorrect" };
+            return { success: false, message: "Old password is incorrect", status: 400 };
         }
 
         // Hash the new password
@@ -123,11 +128,11 @@ const updateUserPassword = async (token, oldPassword, newPassword) => {
         const updateQuery = "UPDATE user SET password = ? WHERE id = ?";
         await utilityService.sendQuery(updateQuery, [hashedNewPassword, userID], "Failed to update password");
 
-        return { success: true, message: "Password updated successfully" };
+        return { success: true, message: "Password updated successfully", status: 200 };
     } catch (err) {
         // Log the error and return a failure response
-        console.error(err);
-        return { success: false, message: err.message };
+        console.error("Error in updateUserPassword: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
@@ -139,7 +144,7 @@ const updateUserPhone = async (phone) => {
         const verificationResult = await utilityService.sendQuery(checkVerificationQuery, [phone], "Failed to check verification");
 
         if (verificationResult.length === 0) {
-            throw new Error("Phone number not verified");
+            return { success: false, message: "Phone number not verified", status: 400 };
         }
 
         // Query to check if the phone number is already present in the database
@@ -152,10 +157,11 @@ const updateUserPhone = async (phone) => {
             await utilityService.sendQuery(updateQuery, [null, null, null, phone, null, "update"], "Failed to update phone");
         }
 
-        return { success: true, message: "Phone updated successfully" };
+        return { success: true, message: "Phone updated successfully", status: 200 };
     } catch (err) {
         // Log the error and return a failure response
-        throw new Error(err.message);
+        console.error("Error in updateUserPhone: ", err);
+        return { success: false, message: err.message, status: 400 };
     }
 };
 
