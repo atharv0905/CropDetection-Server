@@ -151,6 +151,27 @@ const handleRefreshAccessToken = async (req, res) => {
     }
 };
 
+// Function to handle the request to make payment
+const handlePayment = async (req, res) => {
+    const { amount } = req.body;  // Extract the amount from the request body
+    
+    try {
+        // Call the service function to create the payment order
+        const result = await userService.createPayment(amount);
+
+        // Send the response based on the service result
+        return res.status(result.status).json(result);
+    } catch (error) {
+        console.error("Error in payment controller:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to make payment",
+            error: error.message || error,
+            status: 500
+        });
+    }
+};
+
 // Exporting the controller functions
 module.exports = {
     handleCreateNewUser,
@@ -158,5 +179,6 @@ module.exports = {
     handleVerifyOtp,
     handleLogin,
     verifyAccessToken,
-    handleRefreshAccessToken
+    handleRefreshAccessToken,
+    handlePayment
 }

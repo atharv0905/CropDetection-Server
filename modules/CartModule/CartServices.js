@@ -36,7 +36,7 @@ const addToCart = async (token, productID, quantity) => {
         const addProductQuery = `INSERT INTO cart_item (id, cart_id, product_id, quantity) VALUES (?, ?, ?, ?)`;
         await sendQuery(addProductQuery, [id, cartID, productID, quantity], "Error adding product to cart");
 
-        return { success: true, status: 201, message: "Product added to cart successfully" };
+        return { success: true, status: 200, message: "Product added to cart successfully" };
     } catch (err) {
         console.error("Error in addToCart:", err);
         return { success: false, status: 500, message: "An error occurred while adding the product to the cart" };
@@ -55,6 +55,10 @@ const fetchCart = async (token) => {
         if (result.length === 0) {
             return { success: false, status: 404, message: "Cart not found for the user" };
         }
+
+        result.forEach(item => {
+            item.product_images = process.env.BASE_URL + "/prodImg/" + item.product_images;
+        });
 
         return { success: true, status: 200, message: "Cart fetched successfully", data: result };
     } catch (err) {

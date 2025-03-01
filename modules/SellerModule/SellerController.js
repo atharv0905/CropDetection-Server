@@ -218,7 +218,7 @@ const fetchOrderSummaryHandler = async (req, res) => {
 };
 
 const fetchProductsHandler = async (req, res) => {
-    const token = req.headers['authorization'].replace('Bearer ', '');
+    const token = req.headers['authorization']?.replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     const id = decoded.id;
 

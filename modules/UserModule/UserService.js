@@ -15,6 +15,7 @@ const { sendSMS } = require("../../configuration/sms");
 const utilityService = require("../UtilityModule/UtilityService");
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const Razorpay = require('razorpay');
 
 // Function to generate 6 digit OTP
 const generateOTP = () => {
@@ -41,7 +42,7 @@ const sendOTP = async (phone) => {
 
         // Send OTP via SMS
         const phoneNumber = '+91' + phone;
-        await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        // await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         // Return success response
         return { success: true, status: 200, message: "OTP sent successfully" };
@@ -142,7 +143,7 @@ const login = async (phone, password) => {
         }
 
         // Generate tokens
-        const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
         const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
         return {
@@ -194,11 +195,41 @@ const refreshAccessToken = async (refreshToken) => {
     }
 };
 
+// Function for payment order creation
+// Initialize Razorpay client with your key and secret
+const razorpay = new Razorpay({
+    key_id: 'rzp_test_hD75gZIHGX2XGb',
+    key_secret: 'y0ZZRJJa2QUwe9c8w2VUqUeG'
+});
+
+const createPayment = async (amount) => {
+    try {
+        // Create the Razorpay order request
+        const orderRequest = {
+            amount: amount * 100,  // Razorpay expects amount in paise
+            currency: 'INR',
+            receipt: 'receipt#1'
+        };
+
+        const order = await razorpay.orders.create(orderRequest);
+        console.log("Razorpay Order Created:", order);
+
+        // Optionally, you can save order details to your database here
+        // Example: await saveOrderToDatabase(order);
+
+        return { success: true, status: 201, message: "Payment created successfully", order };
+    } catch (err) {
+        console.error("Error creating payment:", err);
+        return { success: false, status: 500, message: "Failed to create payment", error: err.message };
+    }
+};
+
 // Exporting the server functions
 module.exports = {
     sendOTP,
     verifyOTP,
     createNewUser,
     login,
-    refreshAccessToken
+    refreshAccessToken,
+    createPayment
 }

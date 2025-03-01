@@ -13,18 +13,19 @@ const jwt = require('jsonwebtoken');
 // Function to add a new product
 const addProductHandler = async (req, res) => {
     // Extract the required fields from the request body
-    const { name, brand_name, title, desc, category, cost_price, selling_price, about_company, about_product } = req.body;
+    const { name, brand_name, title, desc, category, cost_price, selling_price, about_company_1, about_company_2, about_company_3,  about_product_1, about_product_2, about_product_3, about_product_4 } = req.body;
     const id = req.id;
-    const token = req.headers['authorization'].replace('Bearer ', '');
+    const token = req.headers['authorization']?.replace('Bearer ', '');
 
     // Extract multiple image filenames
     const images = req.files ? req.files.map(file => file.filename) : [];
 
     try {
+        const productData = { id, name, brand_name, title, desc, category, cost_price, selling_price, about_company_1, about_company_2, about_company_3,  about_product_1, about_product_2, about_product_3, about_product_4, images };
+
         // Call the service to add the product
         const result = await productsService.addProduct(token,
-            id, name, brand_name, title, desc, category, cost_price, selling_price,
-            about_company, about_product, images
+            productData
         );
 
         // Send the response

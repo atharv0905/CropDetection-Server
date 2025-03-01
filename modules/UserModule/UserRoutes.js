@@ -33,5 +33,8 @@ router.get('/protected', userController.verifyAccessToken, (req, res) => { // te
 // Route to refresh the access token
 router.post('/refresh-token', userController.handleRefreshAccessToken); // tested
 
+// Route to payment
+router.post('/payment', userController.handlePayment); 
+
 // Exporting the router object
 module.exports = router;

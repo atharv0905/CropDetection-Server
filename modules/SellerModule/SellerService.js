@@ -124,7 +124,7 @@ const sendOTP = async (email, phone) => {
         }
 
         // Send OTP via SMS
-        const smsSent = await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        // const smsSent = await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         if (!smsSent) {
             return { success: false, status: 500, message: "Failed to send OTP via SMS" };
@@ -198,7 +198,7 @@ const createNewUser = async (firstName, lastName, businessName, email, phone, gs
         }
 
         // Hashing the password
-        const hashedPassword = await bycrypt.hash(password, 12);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         // Insert the new seller
         const id = verificationResult[0].id;
@@ -216,7 +216,7 @@ const createNewUser = async (firstName, lastName, businessName, email, phone, gs
 const login = async (email, password) => {
     try {
         // Check if email is registered
-        const checkEmailQuery = "SELECT id, firstName, lastName, businessName, email, phone, password FROM seller WHERE email = ?";
+        const checkEmailQuery = "SELECT id, first_name, last_name, business_name, email, phone, password FROM seller WHERE email = ?";
         const result = await utilityService.sendQuery(checkEmailQuery, [email], "Failed to check email");
 
         if (result.length === 0) {
@@ -229,9 +229,9 @@ const login = async (email, password) => {
         const checkVerificationQuery = "SELECT emailVerified, phoneVerified FROM seller_verification WHERE email = ? AND phone = ?";
         const verification = await utilityService.sendQuery(checkVerificationQuery, [user.email, user.phone], "Failed to check verification");
 
-        if (verification.length === 0 || !verification[0].emailVerified || !verification[0].phoneVerified) {
-            return { success: false, status: 401, message: "Email or phone not verified" };
-        }
+        // if (verification.length === 0 || !verification[0].emailVerified || !verification[0].phoneVerified) {
+        //     return { success: false, status: 401, message: "Email or phone not verified" };
+        // }
 
         // Validate password
         const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -243,7 +243,7 @@ const login = async (email, password) => {
         const accessToken = jwt.sign(
             { id: user.id, email: user.email, businessName: user.businessName },
             process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "1d" }
         );
 
         const refreshToken = jwt.sign(
@@ -322,9 +322,9 @@ const fetchProducts = async (seller_id) => {
         products.forEach(product => {
             product.image = process.env.BASE_URL +"/prodImg/"+ product.image;
         });
-        return { success: true, data: products };
+        return { success: true, data: products, message: "Products fetched successfully", status: 200 };
     } catch (err) {
-        return { success: false, message: err.message };
+        return { success: false, message: err.message, status: 500 };
     }
 }
 

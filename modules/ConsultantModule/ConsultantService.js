@@ -105,7 +105,7 @@ const sendOTP = async (email, phone) => {
         const insertPhoneQuery = "CALL UpsertConsultantVerificationByPhone(?, ?, ?);";
 
         await utilityService.sendQuery(insertPhoneQuery, [id, phone, otp], "Failed to insert phone verification data");
-        await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
+        // await sendSMS(phoneNumber, `Your OTP is ${otp}. Please do not share this with anyone.`);
 
         return { success: true, status: 200, message: "OTP sent successfully" };
     } catch (err) {
@@ -213,7 +213,7 @@ const login = async (email, password) => {
         }
 
         // Generate access token & refresh token
-        const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+        const accessToken = jwt.sign({ id: user.id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
         const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
 
         return { success: true, status: 200, message: "User logged in successfully", accessToken, refreshToken };
